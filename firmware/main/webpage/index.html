@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+    	<meta charset="utf-8"/>
+    	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    	<meta name="apple-mobile-web-app-capable" content="yes" />
+    	<script src='jquery-3.3.1.min.js'></script>
+    	<link rel="stylesheet" href="app.css">
+    	
+    	<title>RoomSense-Settings</title>
+    	<style>
+      		img {
+        	position: absolute;
+        	top: 5px;
+        	left: 110px;
+      	}
+    	</style>
+    	
+    	<script>
+    	
+    	function load_device_location_tag(){
+			var xhr = new XMLHttpRequest();
+			var url = 'get_dev_loc.json';
+			xhr.onreadystatechange = function() {
+			if (xhr.readyState === XMLHttpRequest.DONE) {
+				if (xhr.status === 200) {
+					console.log("response location-tag");
+					console.log(xhr.responseText);
+					let json = JSON.parse(xhr.responseText);
+					console.log(json);
+					if(json.device_location != null)document.getElementById('current_location').textContent = json.device_location;
+					else document.getElementById('current_location').textContent = "NotSet";
+					if(json.ipType != null){
+						if(json.ipType === 'static')document.getElementById('ipsetting_state').textContent = "Current Setting: "+ "Static IP Address";
+						else if(json.ipType === 'dynamic')document.getElementById('ipsetting_state').textContent = "Current Setting: "+ "Dynamic IP Address";
+					}
+					
+					else document.getElementById('ipsetting_state').textContent = "(Default:Dynamic)";
+				} 
+				else {
+				console.error('Request failed with status:', xhr.status);
+				}
+			}
+			};
+			xhr.open('GET', url);
+			xhr.send();
+			
+		}
+    	
+    	function update_ap_switch(json){
+    		let ap_state_btn = document.getElementById('AP_State');
+			if(json.AP_STATE != null){
+
+				if(json.AP_STATE === "true")
+					ap_state_btn.checked = true;
+				else 
+					ap_state_btn.checked = false;
+			}
+			else {
+				ap_state_btn.checked = false;
+			}
+
+    	}
+		document.addEventListener('DOMContentLoaded', function() {
+			const currentHostname = window.location.hostname;
+		
+
+			
+
+			var xhr = new XMLHttpRequest();
+			var url = 'settings_parameters.json';
+			
+			let led_state_btn = document.getElementById('LED_State');
+			xhr.onreadystatechange = function() {
+			if (xhr.readyState === XMLHttpRequest.DONE) {
+				if (xhr.status === 200) {
+					console.log(xhr.responseText);
+					let json = JSON.parse(xhr.responseText);
+					//update_ap_switch();
+					if(json.LED_STATE != null){
+						if(json.LED_STATE === "true")
+						led_state_btn.checked = true;
+						else 
+						led_state_btn.checked = false;
+					}
+					else {
+						led_state_btn.checked = false;
+					}
+				} 
+				else {
+					console.error('Request failed with status:', xhr.status);
+				}
+			}
+			};
+			xhr.open('GET', url);
+			xhr.send();
+			
+
+			console.log(currentHostname);
+			if ('192.168.255.1' === currentHostname) {
+				const divToHide = document.getElementById('navigation_pane');
+				if (divToHide) {
+					divToHide.style.display = 'none';
+				}
+			}
+			
+			var sw2 = document.getElementById('switch-4'); 
+  
+			var c2i_state = localStorage.getItem("c2i_state");
+			if(c2i_state!=null){
+				console.log("got C2Istate : ",c2i_state);
+				sw2.checked = (c2i_state == "true") ? true : false;
+			}
+
+			sw2.addEventListener('change', function() {
+				c2i_state = sw2.checked?"true":"false";
+				localStorage.setItem("c2i_state",c2i_state);
+				console.log("Saving state ",c2i_state);
+			});
+
+		});
+		
+		load_device_location_tag();
+    	</script>   	
+		
+		<script>
+		function change_LED_state(){	
+			var state = document.getElementById("LED_State").checked;
+			console.log(state);
+			if(state){
+				state = "true";
+			}
+			else state = "false";
+
+			var data = JSON.stringify({
+				LED_STATE: state
+			});
+
+			console.log(data);
+			var xhr = new XMLHttpRequest();
+			xhr.open("POST", "LED_STATE.json", true);
+			xhr.setRequestHeader("Content-Type", "application/json");
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState === 4 && xhr.status === 200) {
+					console.log('Success:', xhr.responseText);
+					// Handle success response from the server if needed
+				} else if (xhr.readyState === 4 && xhr.status !== 200) {
+					console.error('Error:', xhr.responseText);
+					// Handle error if the request fails
+				}
+			};
+			xhr.send(data);
+		}
+
+		function change_AP_state (){
+			var state = document.getElementById("AP_State").checked;
+			console.log(state);
+			if(state){
+				state = "true";
+			}
+			else state = "false";
+			var data = JSON.stringify({
+				AP_STATE: state
+			});
+
+			console.log(data);
+			var xhr = new XMLHttpRequest();
+			xhr.open("POST", "AP_STATE.json", true);
+			xhr.setRequestHeader("Content-Type", "application/json");
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState === 4 && xhr.status === 200) {
+					console.log('Success:', xhr.responseText);
+					// Handle success response from the server if needed
+				} else if (xhr.readyState === 4 && xhr.status !== 200) {
+					console.error('Error:', xhr.responseText);
+					// Handle error if the request fails
+				}
+			};
+			xhr.send(data);
+		}
+
+			//document.addEventListener('DOMContentLoaded', function() {
+			function update_device_location(){
+				document.getElementById('device_location_txt').style.display = "block";
+				document.getElementById('device_location_submit').value = "submit";
+				var device_location_content = document.getElementById('device_location_txt').value;
+				var data = JSON.stringify({
+					device_location : device_location_content
+				});
+				console.log(data);
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST", "set_dev_loc.json", true);
+				xhr.setRequestHeader("Content-Type", "application/json");
+				xhr.onreadystatechange = function () {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						document.getElementById('current_location').textContent = device_location_content;
+						console.log('Success:', xhr.responseText);
+						// Handle success response from the server if needed
+					} else if (xhr.readyState === 4 && xhr.status !== 200) {
+						console.error('Error:', xhr.responseText);
+						// Handle error if the request fails
+					}
+				};
+				xhr.send(data);
+				console.log("click");
+			};
+
+			// document.addEventListener('DOMContentLoaded', function() {
+			function showHideInput() {
+				var selectedOption = document.getElementById("ipSelection").value;
+				var staticIpInput = document.getElementById("staticIpInput");
+		
+				if (selectedOption === "static") {
+					staticIpInput.style.display = "block";
+				} else {
+					staticIpInput.style.display = "none";
+				}
+			}
+
+			function showHide_mDNSURL_Input() {
+				var mdnsCheckbox = document.getElementById("switch-2");
+				var mdnsUrlInput = document.getElementById("mDNS_URL");
+
+				if (mdnsCheckbox.checked) {
+					mdnsUrlInput.style.display = "block";
+				} else {
+					mdnsUrlInput.style.display = "none";
+				}
+			}
+
+			function createJSONString() {
+				var ipType = document.getElementById("ipSelection").value;
+				var staticIpValue = ipType === "static" ? document.getElementById("staticIp").value : "null";
+				// var mdnsStatus = document.getElementById("switch-2").checked;
+				// var mdnsUrlValue = mdnsStatus ? document.getElementById("mDNS_URL").value : "null";
+				var data = JSON.stringify({
+					ipType: ipType,
+					staticIpValue: staticIpValue,
+					 mdnsStatus: 'null',
+					mdnsUrlValue: 'null'
+				});
+				console.log(data);
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST", "network_config.json", true);
+				xhr.setRequestHeader("Content-Type", "application/json");
+				xhr.onreadystatechange = function () {
+					if (xhr.readyState === 4 && xhr.status === 200) {
+						console.log('Success:', xhr.responseText);
+						// Handle success response from the server if needed
+					} else if (xhr.readyState === 4 && xhr.status !== 200) {
+						console.error('Error:', xhr.responseText);
+						// Handle error if the request fails
+					}
+				};
+				xhr.send(data);
+			}
+			// });
+		</script>
+		<script async src="app.js"></script>
+	</head>
+	<body>
+	    <br>
+	    <br>
+		<img src="icon.png" alt="Image" height="80" width="600">
+		<div class="navbar">
+			<input type="checkbox" id="toggle" class="checkbox">
+			<label for="toggle" class="hamburger">
+			  <span class="line"></span>
+			  <span class="line"></span>
+			  <span class="line"></span>
+			</label>
+			<ul class="menu">
+			  <li><a href="/">Settings</a></li>
+			  <li><a href="dashboard.html">Main Dashboard</a></li>
+			  <li><a href="climatesense.html">ClimateSense</a></li>
+			</ul>
+		  </div>
+		
+	<header>
+		<h1>RoomSense IQ</h1>
+	</header>
+	<div id = "location_tag" >
+		<label style="color: #4a89e0; font-weight:bolder; font-size: large;"> Location:  </label>
+		<label id = 'current_location' style="color: #79b1ff; font-weight:bolder; font-size: large;"> Not Set </label>
+	</div>
+	<hr>
+	<div id="OTA">
+	<h2>Firmware Update</h2>
+		<label id="latest_firmware_label">Latest Firmware: </label>
+		<div id="latest_firmware"></div> 
+		<input type="file" id="selected_file" accept=".bin" style="display: none;" onchange="getFileInfo()" />
+		<div class="buttons">
+			<input type="button" value="Select File" onclick="document.getElementById('selected_file').click();" />
+			<input type="button" value="Update Firmware" onclick="updateFirmware()" />
+		</div>
+		<h4 id="file_info"></h4>	
+		<h4 id="ota_update_status"></h4>
+	</div>
+	<hr>
+	<div id="WiFiConnect">
+		<h2>WiFi</h2>
+		<section>
+			
+			<input id="connect_ssid" type="text" maxlength="32" placeholder="SSID" value="">
+			<input id="connect_pass" type="password" maxlength="64" placeholder="Password" value="">
+			<input type="checkbox" onclick="showPassword()">Show Password
+			
+		</section>
+		
+		<div class="buttons">
+			<input id="connect_wifi" type="button" value="Connect" />
+		</div>
+		   <div id="wifi_connect_credentials_errors"></div>
+		   <h4 id="wifi_connect_status"></h4>
+	    </div>
+
+	<div id="ConnectInfo">
+		<section>
+			<div id="connected_ap_label"></div> <div id="connected_ap"></div>
+		</section>
+		<div id="ip_address_label"></div> <div id="wifi_connect_ip"></div>
+		<div id="netmask_label"></div> <div id="wifi_connect_netmask"></div>
+		<div id="gateway_label"></div> <div id="wifi_connect_gw"></div>
+		<div class="buttons">
+			<input id="disconnect_wifi" type="button" value="Disconnect" />
+		</div>
+	</div>
+		
+		<section>
+		<!--
+		    <div style="display: flex; margin-top: 20px;">
+		        <label class="switch-label" for="switch">Access Point</label>
+		        <div class="sw_cnt">
+		            <label class="switch">
+		                <input id="AP_State" type="checkbox" onclick="change_AP_state()" class="ssw"> 
+		                <span class="slider-switch"></span>
+		            </label>  
+		        </div>  
+		    </div>
+		-->	
+		    <!-- Add a margin here to create space between the switch and the Access Point Key section -->
+		    <div style="margin: 20px 0;"></div>
+		    <div style="margin: 10px;">
+		        <label for="ap_key" style="font-weight: bolder;">Access Point Key:</label>
+		        <input id="update_key" type="password" maxlength="32" placeholder="New Key" value="">
+		        <input type="checkbox" onclick="showKey()">Show Key
+		    
+		        <div class="buttons">
+		            <input id="update_ap_key" type="button" value="Update" />
+		        </div>
+		        <div id="ap_key_errors"></div>
+		        <div id="ap_save_status"></div>
+		    </div>
+		</section>
+
+		    
+		    
+	<hr>
+	<h2>Network</h2>
+	<div>
+		<label id= "ipsetting_state" style="margin: 10px; color: #578dd8; font-weight: bolder;">Not set</label>
+	</div>
+	<div style="margin: 10px;">
+		
+		<div id="IP_Settings">
+			<label id = "l2" style="font-weight: bolder;" >IP Address Type:</label>
+			<select id="ipSelection" name="ipSelection" onchange="showHideInput()">
+				<option value="dynamic">Dynamic IP Address</option>
+				<option value="static" >Static IP Address</option>
+			</select>
+			
+			<div id="staticIpInput">
+				<input type="text"  placeholder="Enter Static IP Address" id="staticIp" name="staticIp">
+			</div>
+		</div>
+		<input id="update_settings" type="button" value="Update"  onclick="createJSONString()" />
+		
+	</div>
+	<hr>
+
+			
+	<div id="MQTTSettings">
+		<h2>MQTT</h2>
+		<section>
+		    <input id="mqtt_host" type="text" maxlength="32" placeholder="Host" value="">
+		    <input id="mqtt_port" type="text" maxlength="32" placeholder="Port" value="">
+			<input id="mqtt_username" type="text" maxlength="32" placeholder="Username" value="">
+			<input id="mqtt_pass" type="password" maxlength="64" placeholder="Password" value="">
+			<input type="checkbox" onclick="mqtt_show_password()">Show Password
+		</section>
+		<div class="buttons">
+			<input id="connect_mqtt" type="button" value="Submit" />
+		</div>
+		<div id="mqtt_connect_credentials_errors"></div>
+		<h4 id="mqtt_connect_status"></h4>
+	</div>
+	
+	<div id="MQTT Broker Info">
+		<section>
+			<div id="connected_user_label"></div> <div id="connected_user"></div>
+		</section>
+		<div id="host_ip_label"></div> <div id="mqtt_connect_ip"></div>
+		<div id="port_label"></div> <div id="mqtt_connect_port"></div>
+		</div>
+	</div>
+	<hr>
+	<h2>General</h2>
+	<div style="display: flex; margin-top: 20px;">
+			<label class="switch-label" for="switch"> LED </label>
+			<div class="sw_cnt">
+			<label class="switch">
+				<input id = "LED_State" type="checkbox" onclick="change_LED_state()"  class="ssw"> 
+				<span class="slider-switch"></span>
+			</label>  
+		</div>
+
+
+		<div style="display: flex; margin-left: 20px;">
+		<label class="switch-label" for="switch">Imperial Units</label>
+        <div class="sw_cnt">
+		<label class="switch">
+		<input type="checkbox" id="switch-4"  class="ssw">
+		<span class="slider-switch"></span>
+		</label>  
+	</div>
+	
+	<div style="margin-left: 10px; margin-top: -8px;">
+		<input id = 'device_location_txt' type = "text" style="display: none;">	
+		<input id = "device_location_submit" type="button" value="Location Tag" onclick="update_device_location()">
+	</div>
+	</div>
+	</body>
+<html>

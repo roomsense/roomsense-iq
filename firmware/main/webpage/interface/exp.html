@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smooth Graph with Chart.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <canvas id="myChart"></canvas>
+
+    <script>
+        // Sample data for the chart
+        const data = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            datasets: [{
+                label: 'Smooth Graph',
+                data: [10, 20, 30, 25, 15, 35, 27],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 2,
+                lineTension: 0.4, // Set lineTension to control the smoothness of the graph (0 = straight lines, 1 = very curvy)
+                fill: true,
+            }]
+        };
+
+        // Chart configuration options
+        const options = {
+            responsive: true,
+            scales: {
+                x: {
+                    display: true,
+                },
+                y: {
+                    display: true,
+                },
+            },
+        };
+
+        // Create the chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: options,
+        });
+    </script>
+</body>
+</html>

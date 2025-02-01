@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RoomSense-Sightsense</title>
+  
+  <!-- <link rel="stylesheet" href="dashboard.css"> -->
+  
+  <script src="chart.js"></script>
+  <script src="dashboard_charts.js"></script>
+  <style>
+    body {
+    background-color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white; /* Optional: Set text color to white for better visibility on black background */
+    }
+
+    /**************** Charts grid  ****************/
+    .chart-container {
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(1, 1fr);
+      gap: 2px;
+      align-items: center;
+      margin-bottom: 20px;
+      border-radius: 20px;
+      margin: 0px;
+      margin-left: 80px;
+    }
+
+    canvas {
+      border-radius: 20px;
+      background-color: rgb(32, 32, 32);  
+      border: 1px solid;
+      border-color: black;
+    }
+
+    .settings-container{
+      width: 800px;
+      margin-top: 20px;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      background-color: rgb(32, 32, 32);
+      border-radius: 20px;
+      margin-right: 0px;
+    }
+
+    .settings-slider {
+      background-color: rgb(32, 32, 32);
+      margin-left:  220px;
+      /* padding-left: 70px; */
+      margin-right: 20px;
+      
+      width: 150px;
+    }
+
+    /**************** Sliders grid  ****************/
+    .slider-container {
+      
+      display: flex;
+      align-items: center;
+      padding-top: 2px;
+      padding-bottom: 2px;
+      width: 200px;
+    }
+
+    .slider-label {
+      margin: 0px;
+      width: 40px;
+      padding-left:  70px;
+      padding-right: 90px;
+      padding-top:   5%;
+      padding-bottom: 5px;
+      background-color: rgb(32, 32, 32);
+      border-radius: 20px;
+      white-space: nowrap; 
+    }
+
+    .slider {
+      background-color: rgb(0, 0, 0);
+      /* background-color:rgb(14, 13, 13); */
+      margin-left:  20px;
+      padding-left: 20px;
+      margin-right: 30px;
+      width: 150px;
+    }
+
+    .switch-container {
+      margin-left: 70px;
+      margin-top: 0px;
+      margin-right: 30px;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+    }
+
+    .sw_cnt{
+      margin-left: 40px;
+    }
+
+    /**************** Slider Values grid  ****************/
+    
+    .value-names {
+      display: flex;
+    }
+    .value-names .title {
+      border-radius: 20px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      width: 200px;
+      text-align: center; 
+      /* padding-left:  70px;
+      padding-right: 70px;
+      padding-top:   20px;
+      padding-bottom: 20px; */
+      background-color: rgb(32, 32, 32);
+      white-space: nowrap; 
+    }
+
+    /**************** Top level container style ****************/
+
+    .Control-dashboard{
+      display: flex;
+      margin: 20px;
+    }
+
+  
+  .section-0{
+    border-radius: 20px;
+      margin-top: 50px;
+      margin-bottom: 50px;
+      width: 200px;
+      text-align: center; 
+      padding-left:  20px;
+      padding-right: 70px;
+      padding-top:   10px;
+      padding-bottom: 10px; 
+      /* background-color: rgb(32, 32, 32); */
+      white-space: nowrap; 
+    }
+
+  .section-1{
+  font-weight : bold;
+    border-radius: 20px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    width: 300px;
+    text-align: center; 
+    padding-left:  230px;
+    padding-right: 255px;
+    padding-top:   10px;
+    padding-bottom: 10px; 
+    background-color: rgb(32, 32, 32);
+    white-space: nowrap; 
+  }
+  .Heading-0 {
+    margin: 20px;
+    padding: 10px;
+    
+  }
+  .Heading-1{
+      /* display:flex; */
+      margin: 10px;
+  }
+  /* 
+  .Top-Container{
+      margin-top: 100px;
+  } */
+  /* .title-name {
+      /* margin: 40px; 
+  } */
+
+
+  .circle-container {
+    margin-top: 20px;
+    margin-left: 100px;
+      display: flex;
+      /* align-items: center; */
+      flex-direction: column;
+  }
+
+  .occ_status {
+    display: flex;
+    margin-top: 10px;
+  }
+
+  .status {
+    margin-left: 16px;
+      color: rgb(255, 255, 255);
+  }
+
+  .status-elements-container {
+      margin-left: 00px;
+      display: flex ;
+      /* margin-right: 500px; */
+      /* background-color:  rgb(32, 32, 32);; */
+  }
+
+  .distance_div{
+    margin-top: 20px;
+    margin-right: 120px;
+    margin-left: 320px;
+  }
+  .distance {
+    display: flex;
+    /* //padding: 20px; */
+    width: 100px;
+    margin-right: 10px;
+    margin-left: 50px;
+    font-size: 60pt;
+  }
+  .motion_st_div{
+    display: flex;
+    margin-left: 170px;
+  } 
+
+  .distance-name{
+    display: flex;
+    /* margin-top: 150px;
+    padding-top: 10px;
+    padding-bottom: 10px;*/
+    margin-left: 30px; 
+    margin-right: 20px;
+  }
+
+  .motion_st{
+    margin-top: 45px;
+    margin-left : 30px;
+  }
+
+
+  /* CSS for the sliding switch button */
+  /* CSS for the small slider switch */
+  .switch-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .switch-label {
+    width : 50px;
+    margin-right: 260px;
+  }
+
+  .slider-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px; /* Adjust width to control the overall switch size */
+    height: 20px; /* Adjust height to control the overall switch size */
+    background-color: #ccc;
+    border-radius: 10px; /* Adjust border-radius to make the switch rounder */
+    transition: 0.4s;
+  }
+
+  .slider-switch:before {
+    position: absolute;
+    content: "";
+    height: 16px; /* Adjust height to control the size of the sliding button */
+    width: 16px; /* Adjust width to control the size of the sliding button */
+    left: 2px; /* Adjust position to center the sliding button */
+    top: 2px; /* Adjust position to center the sliding button */
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+  }
+
+  input[class="ssw"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  input[class="ssw"]:checked + .slider-switch {
+    background-color: #2196F3;
+  }
+
+  input[class="ssw"]:checked + .slider-switch:before {
+    transform: translateX(18px); /* Adjust translateX to match the width of the sliding button */
+  }
+
+  .slider-value {
+    margin-left: 0px;
+    margin-right: 0px;
+    color: white;
+  }
+
+
+  /*f  */
+
+  .body{
+    background-color: rgb(255, 151, 23);
+    }
+    .navbar {
+    display: flex;
+    margin: 0px;
+    /* //width: 100px;
+    background-color: #c7c7c7; */
+    align-items: center;
+    }
+    
+    .hamburger {
+    display: block;
+    width: 30px;
+    height: 20px;
+    cursor: pointer;
+    
+    }
+    
+    .line {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: #535252;
+    margin-bottom: 5px;
+    transition: background-color 0.3s ease;
+    }
+    
+    .checkbox {
+    display: none;
+    }
+    
+    .checkbox:checked ~ .menu {
+    display: flex;
+    animation: slideIn 0.3s ease;
+    }
+    
+    .menu {
+    display: none;
+    list-style: none;
+    padding: 0;
+    margin-left: 20px;
+    animation: slideOut 0.3s ease;
+    }
+    
+    .menu li {
+    margin-right: 20px;
+    }
+    
+    .menu li a {
+    text-decoration: none;
+    color: #ffffff;
+    }
+    
+    @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-20px); }
+    }
+  .char-title{
+    margin-left: 120px;
+    font-size: 20;
+    font-weight: bold;
+  }
+
+  .charts-block{
+    margin-top: -70px;
+  }
+
+  .WF5{
+    margin-top: 3px;
+    margin-left: 80px; 
+  }
+
+
+
+  .title3 {
+    border-radius: 20px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center; 
+    /* padding-left:  70px;
+    padding-right: 70px;
+    padding-top:   20px;
+    padding-bottom: 20px; */
+    background-color: rgb(32, 32, 32);
+    white-space: nowrap; 
+    width: 100px;
+  }
+
+  .blockerr {
+    margin-left:  70px;
+    margin-right: 0px;
+    width: 150px;
+  }
+
+  .buttons {
+    margin-left: 70px;
+  }
+
+  .custom-button{
+    width: 260px;
+  }
+  /* Styles for the button container */
+  .btn-cnt {
+    display: inline-block;
+    text-align: center;
+    margin: 1px;
+  }
+
+  /* Styles for the button container */
+  .button-container {
+    margin-left: 60px;
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    /* height: 100vh; */
+  }
+
+  /* Styles for the buttons */
+  .custom-button1,
+  .custom-button2 {
+    display: inline-block;
+    font-size:x-small;
+    width: 220px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: #007bff; /* Blue color */
+    color: #ffffff; /* White text */
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 10px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+  }
+
+  /* Hover effect for buttons */
+  .custom-button1:hover,
+  .custom-button2:hover {
+    background-color: #0056b3; /* Darker shade of Blue */
+  }
+
+  /* Active (click) effect for buttons */
+  .custom-button1:active,
+  .custom-button2:active {
+    background-color: #003d80; /* Even darker shade of Blue */
+    transform: translateY(2px);
+  }
+
+  /* Focus effect for buttons (optional) */
+  .custom-button1:focus,
+  .custom-button2:focus {
+    outline: none;
+    box-shadow: 0 0 4px #007bff; /* Blue color */
+  }
+
+
+  /** FF*/
+  input[type="range"]::-moz-range-progress {
+    background-color: #03a9f4; 
+  }
+  input[type="range"]::-moz-range-track {  
+    background-color: #ffffff;
+  }
+
+
+    .slider-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px; /* Adjust width to control the overall switch size */
+        height: 20px; /* Adjust height to control the overall switch size */
+        background-color: #ccc;
+        border-radius: 10px; /* Adjust border-radius to make the switch rounder */
+        transition: 0.4s;
+    }
+
+    .slider-switch:before {
+        position: absolute;
+        content: "";
+        height: 16px; /* Adjust height to control the size of the sliding button */
+        width: 16px; /* Adjust width to control the size of the sliding button */
+        left: 2px; /* Adjust position to center the sliding button */
+        top: 2px; /* Adjust position to center the sliding button */
+        background-color: white;
+        border-radius: 50%;
+        transition: 0.4s;
+    }
+      
+    input[class="ssw"] {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    input[class="ssw"]:checked + .slider-switch {
+        background-color: #2196F3;
+      }
+      
+      input[class="ssw"]:checked + .slider-switch:before {
+        transform: translateX(18px); /* Adjust translateX to match the width of the sliding button */
+      }
+ 
+    .navbar {
+        display: flex;
+        margin-left: 20px;
+        /* //width: 100px;
+        background-color: #c7c7c7; */
+        align-items: center;
+    }
+
+    .hamburger {
+        display: block;
+        width: 30px;
+        height: 20px;
+        cursor: pointer;
+        
+    }
+
+    .line {
+        display: block;
+        width: 100%;
+        height: 3px;
+        background-color: #535252;
+        margin-bottom: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+    .checkbox {
+        display: none;
+    }
+
+    .checkbox:checked ~ .menu {
+        display: flex;
+        animation: slideIn 0.3s ease;
+    }
+
+    .menu {
+        display: none;
+        list-style: none;
+        padding: 0;
+        margin-left: 20px;
+        animation: slideOut 0.3s ease;
+    }
+
+    .menu li {
+        margin-right: 20px;
+        border-radius: 10px;
+        background-color: #4e4e4e;
+    }
+
+    .menu li a {
+        text-decoration: none;
+        color: #ffffff;
+        
+        padding: 20px;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(-20px); }
+    }
+
+
+  </style>
+</head>
+<body>
+  
+  <div class="navbar">
+    <input type="checkbox" id="toggle" class="checkbox">
+    <label for="toggle" class="hamburger">
+      <span class="line"></span>
+      <span class="line"></span>
+      <span class="line"></span>
+    </label>
+    <ul class="menu">
+      <li><a href="/">Settings</a></li>
+      <li><a href="climatesense.html">ClimateSense</a></li>
+    </ul>
+  </div>
+<div class="Top-Container">
+
+<div class="status-elements-container">
+  <img id = "logo" src="RoomSense_Logo.png" height="80" width="600" class="motion_st">
+  <div class="circle-container">
+    <img id = "occ_state" src="home_occupid.png" height="100" width="100" class="occ_status">
+    <!-- <div class="circle"></div> -->
+    <label class="status">Occupied</label>  
+  </div>  
+  <div class="distance_div">
+    <label id = 'distance_label' class="distance"> 0 </label>
+    
+    <label id='distance_name' class="distance-name"> Distance (CM)</label>
+  </div>  
+  <div class="motion_st_div">
+    <img id = "motion_status" src="motion_false.png" height="100" width="100" class="motion_st">
+  </div>
+</div>
+
+
+<div class="Heading-0">
+  <label class="section-1">SightSense</label>
+</div>
+<div class="Heading-1">
+  <label class="section-0">ProxiSense</label>
+</div>
+<div class="Control-dashboard">
+  <div class="ProxiSense">
+    
+    <div class="value-names">
+      <label class="title">Range</label> 
+      <label class="title">Macro Threshold</label> 
+      <label class="title">Micro Threshold</label> 
+      <label class="title3">Blocker</label> 
+    </div>
+    <div class="slider-container">
+      <label class="slider-label" id = "range_label1" >0-0cm</label>
+      <input type="range" id="macro_th1" class="slider">
+      <input type="range" id="micro_th1" class="slider">
+      <input type="checkbox" id="slider_blocker0" class="blockerr">
+      
+    </div>
+    
+    <div class="slider-container">
+      <label class="slider-label" id = "range_label2" >0-75cm</label>
+      <input type="range" id="macro_th2" class="slider">
+      <input type="range" id="micro_th2" class="slider">
+      <input type="checkbox" id="slider_blocker1" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label3" >75-150cm</label>
+      <input type="range" id="macro_th3" class="slider">
+      <input type="range" id="micro_th3" class="slider">
+      <input type="checkbox" id="slider_blocker2" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label4" >150-225cm</label>
+      <input type="range" id="macro_th4" class="slider">
+      <input type="range" id="micro_th4" class="slider">
+      <input type="checkbox" id="slider_blocker3" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label5" >225-300cm</label>
+      <input type="range" id="macro_th5" class="slider">
+      <input type="range" id="micro_th5" class="slider">
+      <input type="checkbox" id="slider_blocker4" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label6" >300-375cm</label>
+      <input type="range" id="macro_th6" class="slider">
+      <input type="range" id="micro_th6" class="slider">
+      <input type="checkbox" id="slider_blocker5" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label7" >375-450cm</label>
+      <input type="range" id="macro_th7" class="slider">
+      <input type="range" id="micro_th7" class="slider">
+      <input type="checkbox" id="slider_blocker6" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label8" >450-525cm</label>
+      <input type="range" id="macro_th8" class="slider">
+      <input type="range" id="micro_th8" class="slider">
+      <input type="checkbox" id="slider_blocker7" class="blockerr">
+    </div>
+
+    <div class="slider-container">
+      <label  class="slider-label" id = "range_label9" >525-600cm</label>
+      <input type="range" id="macro_th9" class="slider">
+      <input type="range" id="micro_th9" class="slider">
+      <input type="checkbox" id="slider_blocker8" class="blockerr">
+    </div> 
+
+    
+    <div class="settings-container">
+      <div class="slider-container">
+        <label id = "MMR1"  class="slider-label">Max Macro Range(cm)</label>
+        <input type="range" min="0" max="600" id="max_macro_range" class="settings-slider">
+        <span class="slider-value" id = "MR1">300</span>
+      </div>
+      
+      <div class="slider-container">
+        <label id = "MMR2" class="slider-label">Max Micro Range(cm)</label>
+        <input type="range" min="0" max="600" id="max_micro_range" class="settings-slider">
+        <span class="slider-value"id = "MR2">300</span>
+      </div>
+
+      <div class="slider-container">
+        <label  class="slider-label">Timeout(sec)</label>
+        <input type="range"  min="1" max="600" id="Timeout" class="settings-slider">
+        <span class="slider-value" id = "TO">300</span>
+      </div>
+
+      <div class="switch-container">
+        <label class="switch-label" for="switch">BedSense</label>
+        <div class="sw_cnt">
+          <label class="switch">
+            <input type="checkbox" id="switch-1"  class="ssw">
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+      </div>
+
+      
+    
+      <div class="button-container">
+        <!-- <div class="btn-cnt"> -->
+            <button id = "get_cnfg" type="button" class="custom-button1">Get Configuration</button>
+            <button id = "f_reset" type="button" class="custom-button2">Factory Reset</button>
+        <!-- </div> -->
+      </div>
+
+      <div class="button-container">
+        <!-- <div id = "btn-cnt"> -->
+            <button id = "bcal-btn" type="button" class="custom-button1">Baseline Calibration</button>
+            <button id = "bscal-btn" type="button" class="custom-button2">Blindspot Calibration</button>
+        <!-- </div> -->
+      </div>
+
+    </div>
+  </div>
+
+  <div class="Configuration">
+  
+    
+
+  </div>
+  <div class="charts-block">
+  <p class="char-title">MoveSense</p>
+
+  <div class="chart-container">
+    
+    <canvas id="waveform-1" width="500" height="300"></canvas>
+    <canvas id="waveform-2" width="500" height="300"></canvas>
+    <!-- <canvas id="waveform-3" width="500" height="300"></canvas>
+    <canvas id="waveform-4" width="500" height="300"></canvas> -->
+    
+  </div>
+  <canvas class = "WF5" id="waveform-5" width="1000" height="300"></canvas>
+</div>
+</div>
+</div>
+</body>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Load and set initial value from localStorage
+    loadAndSetInitialCheckboxValue("switch-1");
+
+    var checkbox = document.getElementById("switch-1");
+    checkbox.addEventListener('change', function() {
+      var value = this.checked;
+      localStorage.setItem(this.id, value);
+    });
+
+    function loadAndSetInitialCheckboxValue(checkboxId) {
+      var savedValue = localStorage.getItem(checkboxId);
+      if (savedValue !== null) {
+        document.getElementById(checkboxId).checked = savedValue === 'true';
+      }
+    }
+});
+</script>
+</html>
+

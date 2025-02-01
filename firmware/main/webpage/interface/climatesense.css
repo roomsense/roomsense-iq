@@ -1,0 +1,79 @@
+body {
+    background-color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+}
+
+canvas {
+    border-radius: 20px;
+    background-color: rgb(32, 32, 32);  
+    border: 1px solid;
+    border-color: black;
+}
+
+#cntrl-intf-title{
+    margin-left: 20px;
+    text-align: center; 
+}
+
+#cntrl-intf{
+    background-color:rgb(32, 32, 32);
+    border-radius: 20px;
+    height: 260px;
+    width: 500px;
+    
+}
+#switch-panel {
+    margin-left: 120px;
+}
+.cfg-options{
+    background-color:rgb(49, 49, 49);
+    border-radius: 10px;
+    margin-top:10;
+    margin-bottom: 10px;
+    margin-left: 20px;
+    width: 240px;
+    gap: 40px;
+    display: flex;
+    flex-wrap: wrap;
+}
+#cfg-op1 {
+    width: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+.cfg-sw {
+    margin-top: 20px;
+    margin-left: 10px;
+}
+
+#chart-container{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 2px;
+    align-items: center;
+    margin-bottom: 20px;
+    border-radius: 20px;
+    margin: 0px;
+    margin-left: 10px;
+}
+
+#charts-block{
+    display: flex;
+    margin: 50px;
+    margin-top: 0;
+    /* margin-top: -70px; */
+  }
+
+#charts-title{
+    text-align: center;
+    font-size: xx-large;
+}
+
+#top_section{
+    display: flex;
+    gap: 50px;
+}
+
+

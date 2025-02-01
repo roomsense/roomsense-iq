@@ -1,0 +1,37 @@
+
+
+.slider-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px; /* Adjust width to control the overall switch size */
+    height: 20px; /* Adjust height to control the overall switch size */
+    background-color: #ccc;
+    border-radius: 10px; /* Adjust border-radius to make the switch rounder */
+    transition: 0.4s;
+}
+
+.slider-switch:before {
+    position: absolute;
+    content: "";
+    height: 16px; /* Adjust height to control the size of the sliding button */
+    width: 16px; /* Adjust width to control the size of the sliding button */
+    left: 2px; /* Adjust position to center the sliding button */
+    top: 2px; /* Adjust position to center the sliding button */
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+  
+input[class="ssw"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+input[class="ssw"]:checked + .slider-switch {
+    background-color: #2196F3;
+  }
+  
+  input[class="ssw"]:checked + .slider-switch:before {
+    transform: translateX(18px); /* Adjust translateX to match the width of the sliding button */
+  }

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ClimateSense</title>
+        <!-- <link rel="stylesheet" href="climatesense.css"> -->
+        <!-- <link rel="stylesheet" href="navbar.css"> -->
+        <!-- <link rel="stylesheet" href="slideswitch.css"> -->
+        <script src="chart.js"></script>
+        <!-- <script src="climatesense.js"></script> -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var chart1= {}, 
+                    chart2= {}, 
+                    chart3= {}, 
+                    chart4= {}, 
+                    chart5= {},
+                    chart6= {},
+                    chart7= {},
+                    chart8= {};
+
+                let range = [0, 100];
+                let labels_data = [];
+                let temp_unit = 'c';
+                var update_log_buffer = false;
+                Create_Waveform_Chart(chart1,"chart-1" ,"Temperature",range,false,  true, labels_data,0.4);
+                Create_Waveform_Chart(chart2,"chart-2" ,"Humidity",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart3,"chart-3" ,"CO2",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart4,"chart-4" ,"VOC",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart5,"chart-5" ,"PM 10",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart6,"chart-6" ,"PM 2.5",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart7,"chart-7" ,"PM 1.0",  range,false, true, labels_data,0.4);
+                Create_Waveform_Chart(chart8,"chart-8" ,"CO",  range,false, true, labels_data,0.4);
+                
+                start_websocket_client(100);
+                function set_label_data(id,data){
+                    if(data != null)   document.getElementById(id).textContent = data;
+                    else  document.getElementById(id).textContent = "NO-DATA";
+                
+                }
+
+                function set_action_points(data){
+                    set_label_data("action_pt_idx1",data.HUMIDITY_AP[0]);
+                    set_label_data("action_pt_idx2",data.CO2_AP[0]);
+                    set_label_data("action_pt_idx3",data.VOC_AP[0]);
+                    set_label_data("action_pt_idx4",data.CO_AP[0]);
+                    set_label_data("action_pt_idx5",data.PM_AP[0]);
+                    set_label_data("action_pt_idx6",data.STATUS_AP[0]);
+                }
+                                
+                var c2i_state = localStorage.getItem("c2i_state");
+                if(c2i_state!=null){
+                    console.log("C2Istate : ",c2i_state);
+                    temp_unit = (c2i_state == "true") ? 'f' : 'c';
+                    console.log("C2Istate : ",c2i_state, temp_unit);
+                }
+
+                const maxRetries = 2; // Maximum number of retry attempts
+                let currentRetry = 0; // Current retry attempt
+            var newData;
+			function delay(ms) {
+			  return new Promise(resolve => setTimeout(resolve, ms));
+			}
+			
+            let lbl = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+                        for(let i=0; i < 96;i++){
+                            lbl[i] = 0;
+                        }
+
+            function update_elements(){
+                set_action_points(newData);
+                if(newData.CO2[0] != "NULL"){
+                update_chartSP(chart3.chart,newData.CO2, true,lbl);
+                }
+                if(newData.VOC[0] != "NULL"){
+                update_chartSP(chart4.chart,newData.VOC, true,lbl);
+                // update_realtime_values(chart4.chart,'VOC',newData.VOC[0]);
+                }
+
+                if(newData.PM10[0] != "NULL"){
+                update_chartSP(chart5.chart,newData.PM10, true,lbl);
+                }
+                if(newData.PM2_5[0] != "NULL"){
+                update_chartSP(chart6.chart,newData.PM2_5, true,lbl);
+                }
+                if(newData.PM1_0[0] != "NULL"){
+                update_chartSP(chart7.chart,newData.PM1_0, true,lbl);
+                }
+
+                if(newData.CO[0] != "NULL"){
+                update_chartSP(chart8.chart,newData.CO, true,lbl);
+                }
+                
+                update_realtime_values('chart-3','CO2',  newData.co2_realtime[0]);
+                update_realtime_values('chart-4','VOC',  newData.voc_realtime[0]);
+                update_realtime_values('chart-5','PM1',  newData.pm10_realtime[0]);
+                update_realtime_values('chart-6','PM2.5',newData.pm2_5_realtime[0]);
+                update_realtime_values('chart-7','PM1.0',newData.pm1_0_realtime[0]);
+                update_realtime_values('chart-8','CO',   newData.co_realtime[0]);
+
+
+                if(newData.temperature[0] != "NULL"){
+                    console.log("adding data point");
+                    update_chartSP(chart1.chart,newData.temperature, true,lbl);
+                }
+            
+                if(newData.temperature_realtime[0] != "NULL"){   
+                update_realtime_values("chart-1",'Temperature',newData.temperature_realtime[0]);  
+                }
+            
+                //Humidity
+                if(newData.humidity[0] != "NULL"){
+                update_chartSP(chart2.chart,newData.humidity, true,lbl);
+                }
+                if(newData.humidity_realtime[0] != "NULL"){
+                update_realtime_values("chart-2",'Humidity',newData.humidity_realtime[0]);
+                }
+            }
+
+                function start_websocket_client(poll_interval){ 
+                  
+                    var gateway = `ws://${window.location.hostname}/ws`;
+                    socket = new WebSocket(gateway); 
+                    // Handle WebSocket connection opened event
+                    socket.onopen = function(event) {
+                        console.log('WebSocket connection opened');
+                        setInterval(function() {
+                            var message = 'data_request';
+                            socket.send(message);
+                            }, poll_interval
+                        );	
+                    };
+                
+                    socket.onclose = function(event) {
+                        if (currentRetry < maxRetries) {
+                        currentRetry++;
+                        console.log(`WebSocket connection closed. Retrying in 2 seconds... (Attempt ${currentRetry}/${maxRetries})`);
+                        setTimeout(start_websocket_client, 3500); // Retry after 2 seconds
+                        } 
+                        else {
+                            console.error('WebSocket connection failed after maximum retry attempts.');
+                        }
+                    };
+                    // Handle WebSocket message received event
+                    
+                    socket.onmessage = function(event) {        
+                        try{
+                            newData = JSON.parse(event.data);
+                            if(newData.temperature.length > 1){
+                                if(update_log_buffer == false){
+                                    console.log("restoring graphs");
+                                    update_log_buffer = true; 
+                                    update_elements();
+                                    console.log("Got past values: ",newData.temperature.length);
+                                }
+                                else {
+                                    console.log("error:2");
+                                }
+                            }
+                            else if(newData.temperature.length == 1) {
+                                // update_log_buffer = true;
+                                update_elements();
+                            }
+                            else {
+                                console.log("sz: ",newData.temperature.length);
+                                console.log("ULG",update_log_buffer);
+                                console.log("Rejecting Last frame to prvent overwrite chart");
+                            }
+                        }
+                        catch(error){
+                            console.error('Error parsing JSON:', error.message);
+                            console.log("received ",event.data);  
+                        }
+                        
+
+                        
+                    // console.log(newData);
+                        
+                        
+                    };
+
+
+                // Handle WebSocket connection error event
+                socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                };  
+                }
+
+                function conv_temp_c2f(temp){
+                var fahrenheit = (temp * 9/5) + 32;
+                return fahrenheit;
+                }
+                
+                function Create_Waveform_Chart(waveform_obj, elementid, chart_title_name, range, xaxis_display, yaxis_display, labels_data, line_tension) {
+                var ctx1 = document.getElementById(elementid).getContext('2d');
+
+                waveform_obj.chart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                    labels: labels_data,
+                    datasets: [
+                        {
+                        data: [],
+                        borderWidth: 1,
+                        borderColor: 'orange',
+                        backgroundColor: 'rgba(0, 0, 0, 0)',
+                        pointRadius: 0,
+                        lineTension: line_tension,
+   						borderWidth:3,
+                         backgroundColor : 'rgba(255, 117, 53, 0.1)',
+                        fill: true,
+                        },
+                        {
+                        data: [],
+                        borderWidth: 1,
+                        borderColor: '#03a9f4',
+                        backgroundColor: 'rgba(0, 0, 0, 0)',
+                        pointRadius: 0,
+                        lineTension: line_tension,
+                        fill: true,
+                        }
+                    ]
+                    },
+                    options: {
+                    tooltips: {
+			            callbacks: {
+			                label: function(tooltipItem, data) {
+			                    return data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+			                }
+			            }
+			        },
+                    layout: {
+                        padding: {
+                				top: 35
+            				}
+                    },
+                    width: 550,
+                    height: 350,
+                    responsive: false,
+                    backgroundColor: 'rgba(0, 0, 0, 1)',
+                    scales: {
+                        x: {
+                        type: 'category',
+                        offset: true,
+                        display: xaxis_display,
+                        },
+                        x2: {
+                        type: 'category',
+                        offset: true,
+                        display: false, // Set display to false to hide the x2-axis labels
+                        },
+                        y: {
+                        display: false,
+                        grid: {
+                        	display : false,			
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        suggestedMin: range[0],
+                        suggestedMax: range[1]
+                        },
+
+                    },
+                    elements: {
+                        line: {
+                        backgroundColor: 'orange',
+                        borderColor: 'orange',
+                        tension: 0.3
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    },
+                    plugins: {
+                        title: {
+                        color: 'rgba(255, 255, 255, 1)',
+                        text: chart_title_name,
+                        fontSize: 24,
+                        display: true,
+                        font: {
+                            family: 'Arial', // Specify your desired font family
+                            size: 14,
+                            weight: 'normal'
+                        }
+                        },
+                        legend: {
+                        display: false
+                        },
+                        streaming: {
+                        frameRate: 30,
+                        duration: 10000,
+                        delay: 0
+                        }
+                    }
+                    }
+                });
+                }
+
+              function update_realtime_values(chart_id, type, value) {
+    const canvas = document.getElementById(chart_id);
+    if (!canvas) {
+        console.log("Can't get ", chart_id);
+        return; // Exit function if canvas is not found
+    }
+    const context = canvas.getContext('2d');
+    const textX = 45; // X-coordinate for text
+    const textY = 35; // Y-coordinate for text
+
+    // Clear only the region where the text will be rendered
+    context.clearRect(textX, textY - 24, 200, 30); // Adjust width and height as needed
+
+    context.font = '24px Arial';
+    context.fillStyle = 'white';
+    let string = "";
+
+    if (type === 'Temperature') {
+        if (temp_unit === 'f') {
+            value = conv_temp_c2f(value);
+            string = value + ' F';
+        } else if (temp_unit === 'c') {
+            string = value + ' C';
+        }
+    } else if (type === 'Humidity') {
+        string = value + ' %';
+    } else if (type === 'CO2') {
+        string = value + ' ppm';
+    } else if (type === 'VOC') {
+        string = value + ' index';
+    } else if (type === 'PM1' || type === 'PM2.5' || type === 'PM1.0') {
+        string = value + ' ug/m3';
+    } else if (type === 'CO') {
+        string = value + ' ppm';
+    } else {
+        string = value;
+    }
+
+    context.fillText(string, textX, textY);
+}
+
+                function update_chartSP(ctx, newData, appendLabels, labelsData) {
+                const maxPoints = 96;
+
+                if (appendLabels) {
+                    // Append new labels to the existing labels
+                    ctx.data.labels.push(...labelsData);
+                    // Ensure there are no more than 16 labels
+                    if (ctx.data.labels.length > maxPoints) {
+                    ctx.data.labels = ctx.data.labels.slice(-maxPoints);
+                    }
+                }
+
+                // Append new data points to the existing dataset
+                ctx.data.datasets[0].data.push(...newData);
+                // Ensure there are no more than 16 data points
+                if (ctx.data.datasets[0].data.length > maxPoints) {
+                    ctx.data.datasets[0].data = ctx.data.datasets[0].data.slice(-maxPoints);
+                }
+
+                // Update the chart
+                ctx.update({
+                    duration: 14,
+                    easing: 'linear',
+                    preservation: true
+                });
+                }
+
+                });
+
+
+                function openOverlay() {
+                    document.getElementById("overlay").style.display = "flex";
+                }
+
+                function closeOverlay() {
+                    document.getElementById("overlay").style.display = "none";
+                }
+
+                                // Function to start the countdown
+                function startCountdown() {
+                    var seconds = 180; // Total seconds for the countdown
+                    var countdownElement = document.getElementById('overlay_p');
+
+                    // Function to update the countdown display
+                    function updateCountdown() {
+                    var minutes = Math.floor(seconds / 60);
+                    var remainingSeconds = seconds % 60;
+
+                    // Add leading zero if necessary
+                    if (remainingSeconds < 10) {
+                        remainingSeconds = "0" + remainingSeconds;
+                    }
+
+                    countdownElement.textContent = "Time Remaining: "+ minutes + ":" + remainingSeconds;
+
+                    if (seconds === 0) {
+                        clearInterval(intervalId); // Stop the countdown when it reaches 0
+                    } else {
+                        seconds--; // Decrease the seconds
+                    }
+                    if(minutes == 0 && seconds ==0 ){
+                        countdownElement.textContent = "Calibration has been completed successfully!";
+                    }
+                    }
+
+                   
+
+                    updateCountdown(); // Call the function immediately to display initial countdown
+
+                    var intervalId = setInterval(updateCountdown, 1000); // Update countdown every second
+                }
+
+                function proceed_further(){
+                    // document.getElementById("co2_cal").textContent = "calibrating CO2 sensor...";
+                    const data = { "value" : "0" , "name": "co2_cal" }; 
+                    console.log('Context:', JSON.stringify(data));
+                    socket.send(JSON.stringify(data));
+                    document.getElementById('overlay_h2').textContent = "Calibration process initiated. Please wait for completion.";
+                    document.getElementById('overlay_p').textContent = "Time Remaining:"
+                    document.getElementById('proceed_further').style.display = 'none';
+                    startCountdown();
+                    
+                    
+                }
+
+
+        </script>
+        <style> 
+            body {
+                background-color: rgb(0, 0, 0);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: white;
+            }
+
+            canvas {
+                border-radius: 20px;
+                background-color: rgb(32, 32, 32);  
+                border: 1px solid;
+                border-color: black;
+                
+            }
+            
+            
+            #cntrl-intf-title{
+                margin-left: 20px;
+                text-align: center; 
+            }
+
+            #cntrl-intf{
+                background-color:rgb(32, 32, 32);
+                border-radius: 20px;
+                height: 260px;
+                width: 500px;
+                
+            }
+            #switch-panel {
+                margin-left: 120px;
+            }
+            .cfg-options{
+                background-color:rgb(49, 49, 49);
+                border-radius: 10px;
+                margin-top:10;
+                margin-bottom: 10px;
+                margin-left: 20px;
+                width: 240px;
+                gap: 40px;
+                display: flex;
+                flex-wrap: wrap;
+            }
+            #cfg-op1 {
+                width: 20px;
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+            .cfg-sw {
+                margin-top: 20px;
+                margin-left: 10px;
+            }
+
+            #chart-container{
+                display:grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+                gap: 2px;
+                align-items: center;
+                margin-bottom: 20px;
+                border-radius: 20px;
+                margin: 0px;
+                margin-left: 10px;
+            }
+
+            #charts-block{
+                display: flex;
+                margin: 50px;
+                margin-top: 0;
+                /* margin-top: -70px; */
+            }
+
+            #charts-title{
+                text-align: center;
+                font-size: xx-large;
+            }
+
+            #top_section{
+                display: flex;
+                gap: 50px;
+            }
+            
+            
+
+            .action_pt2{
+                width: 50px;
+                padding-left: 120px;
+                margin-top: 4px;
+                margin-bottom:4px ;
+                margin-right: 20px;
+                padding-right: 65px;
+            }
+
+            .action_pt{
+                /* padding-left: 36px; */
+                margin-top: 4px;
+                margin-bottom:4px ; 
+                margin-right: 25px;
+            }
+            .slider-switch {
+                position: relative;
+                display: inline-block;
+                width: 40px; /* Adjust width to control the overall switch size */
+                height: 20px; /* Adjust height to control the overall switch size */
+                background-color: #ccc;
+                border-radius: 10px; /* Adjust border-radius to make the switch rounder */
+                transition: 0.4s;
+            }
+
+            .slider-switch:before {
+                position: absolute;
+                content: "";
+                height: 16px; /* Adjust height to control the size of the sliding button */
+                width: 16px; /* Adjust width to control the size of the sliding button */
+                left: 2px; /* Adjust position to center the sliding button */
+                top: 2px; /* Adjust position to center the sliding button */
+                background-color: white;
+                border-radius: 50%;
+                transition: 0.4s;
+            }
+            
+            input[class="ssw"] {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            input[class="ssw"]:checked + .slider-switch {
+                background-color: #2196F3;
+            }
+            
+            input[class="ssw"]:checked + .slider-switch:before {
+                transform: translateX(18px); /* Adjust translateX to match the width of the sliding button */
+            }
+   
+            .navbar {
+                display: flex;
+                margin-left: 20px;
+                /* //width: 100px;
+                background-color: #c7c7c7; */
+                align-items: center;
+            }
+
+            .hamburger {
+                display: block;
+                width: 30px;
+                height: 20px;
+                cursor: pointer;
+                
+            }
+
+            .line {
+                display: block;
+                width: 100%;
+                height: 3px;
+                background-color: #535252;
+                margin-bottom: 5px;
+                transition: background-color 0.3s ease;
+            }
+
+            .checkbox {
+                display: none;
+            }
+
+            .checkbox:checked ~ .menu {
+                display: flex;
+                animation: slideIn 0.3s ease;
+            }
+
+            .menu {
+                display: none;
+                list-style: none;
+                padding: 0;
+                margin-left: 20px;
+                animation: slideOut 0.3s ease;
+            }
+
+            .menu li {
+                margin-right: 20px;
+                border-radius: 10px;
+                background-color: #4e4e4e;
+            }
+
+            .menu li a {
+                text-decoration: none;
+                color: #ffffff;
+                
+                padding: 20px;
+            }
+
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateX(-20px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+
+            @keyframes slideOut {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(-20px); }
+            }
+            
+            .custom-button1 {
+                display: inline-block;
+                font-size:x-small;
+                width: 220px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+                background-color: #007bff; /* Blue color */
+                color: #ffffff; /* White text */
+                font-size: 16px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                margin: 10px;
+                text-transform: uppercase;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+            }
+
+            .custom-button1:hover,
+            .custom-button2:hover {
+                background-color: #0056b3; 
+            }
+            .custom-button1:active,
+            .custom-button2:active {
+                background-color: #003d80; 
+                transform: translateY(2px);
+            }
+
+            .custom-button1:focus,
+            .custom-button2:focus {
+                outline: none;
+                box-shadow: 0 0 4px #007bff; 
+            }
+
+            .co2_cal{
+                margin-left: 200px;
+                padding-left: 3000px;
+            }
+
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+                display: none; /* Initially hidden */
+                justify-content: center;
+                align-items: center;
+            }
+
+            /* Style for overlay content */
+            .overlay-content {
+                background-color: rgb(30, 30, 30);
+                padding: 20px;
+                border-radius: 5px;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="overlay" id="overlay">
+            <div class="overlay-content">
+              <h2 id = "overlay_h2">Notice:</h2>
+              <p id = "overlay_p">Sensor must be in outdoor air for calibration. Takes 3 mins. Ready to begin?</p>
+              <button class="custom-button1" onclick="closeOverlay()">Close</button>
+              <button id = "proceed_further" class="custom-button1" onclick="proceed_further()">Ok</button>
+            </div>
+          </div>
+          
+        <div id="top_section">								
+            <div class="navbar">
+                <input type="checkbox" id="toggle" class="checkbox">
+                <label for="toggle" class="hamburger">
+                <span class="line"></span>
+                <span class="line"></span>
+                <span class="line"></span>
+                </label>
+                <ul class="menu">
+                <li><a href="/">Settings</a></li>
+                <li><a href="dashboard.html">Main Dashboard</a></li>
+                </ul>
+            </div>
+            
+            <img id = "logo" src="RoomSense_Logo.png" height="80" width="600" class="motion_st">
+     
+        </div>
+        
+        <div id = "top">
+            
+        
+        <div>
+            <p id="charts-title">ClimateSense</p>
+        </div>
+       
+
+        <div id = charts-block> 
+            
+            <div id="chart-container">  
+                     
+                    <div id="action_points" style="width: 500;
+                                                height: 220px;
+                                                    background-color: rgb(32, 32, 32);
+                                                    border-radius: 20px;
+                                                    padding: 20px;
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    /* justify-content: space-between; */
+                                                    align-items: left;
+                                                    font-family: 'Helvetica';
+                                                    font-size: 10px;" >
+                    
+                    <label style="text-align: center; font-size: 11px; margin-top: 10px; margin-bottom: 4px;">ACTION POINTS</label>
+                    <div style=" border-radius: 10px; width: 460px;">
+                    <div style="display: flex; margin-top: 20px;font-size: 15px; background-color: rgb(49, 49, 49); border-radius: 10px; margin: 2px;  ">
+                        <p class = "action_pt2" style=" color: #4a89e0;">Humidity:</p>
+                        <label id = "action_pt_idx1"  class = "action_pt">Low Humidity</label>
+                    </div>
+
+                    <div style="display: flex;font-size: 15px;background-color: rgb(49, 49, 49); border-radius: 10px;  margin: 2px; ">
+                        <p class = "action_pt2" style="color: #4a89e0;">CO2: </p>
+                        <label id = "action_pt_idx2"  class = "action_pt">Fresh Air</label>
+                    </div>
+                    
+
+                    <div style="display: flex;font-size: 15px; background-color: rgb(49, 49, 49); border-radius: 10px;  margin: 2px; ">
+                        <p class = "action_pt2" style="color: #4a89e0;">VOC: </p>
+                        <label id = "action_pt_idx3"  class = "action_pt">Normal Level</label>
+                    </div>
+
+                    <div style="display: flex;font-size: 15px; background-color: rgb(49, 49, 49); border-radius: 10px;  margin: 2px; ">
+                        <p class = "action_pt2" style="color: #4a89e0;">CO: </p>
+                        <label id = "action_pt_idx4" class = "action_pt">No Alarm</label>
+                    </div>
+
+                    <div style="display: flex;font-size: 15px; background-color: rgb(49, 49, 49); border-radius: 10px;  margin: 2px; ">
+                        <p class = "action_pt2" style="color: #4a89e0;">PM: </p>
+                        <label id = "action_pt_idx5" class="action_pt">No Alarm</label>
+                    </div>
+                    
+                    <div style="display: flex;font-size: 15px; background-color: rgb(49, 49, 49); border-radius: 10px;   margin: 2px; ">
+                        <p class = "action_pt2" style="color: #4a89e0; width: 80px;"> Mold Risk: </p>
+                        <label id = "action_pt_idx6" class="action_pt" style="width: 180px; margin-left: -30px;">Low Condensation and Mold growth.</label>
+                    </div>
+                </div>
+
+                    <!-- <label id = "action_pt_idx6" style="width: 300px; margin-left: 90px;font-size: 15px;">Low Chance of COndensation and Mold Growth </label> -->
+                </div>
+                <!-- <canvas class = "charts" id="chart-9" width="500" height="260"></canvas> -->
+                <canvas class = "charts" id="chart-1" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-2" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-3" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-4" width="500" height="260"></canvas> 
+                <canvas class = "charts" id="chart-5" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-6" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-7" width="500" height="260"></canvas>
+                <canvas class = "charts" id="chart-8" width="500" height="260"></canvas>       
+                
+
+                <div id="action_points" style="width: 500;
+                                                height: 220px;
+                                                    background-color: rgb(32, 32, 32);
+                                                    border-radius: 20px;
+                                                    padding: 20px;
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    /* justify-content: space-between; */
+                                                    align-items: left;
+                                                    font-family: 'Helvetica';
+                                                    font-size: 10px;"
+                                                >
+                <button id = "co2_cal" type="button" class="custom-button1" style="margin-top: 100px; margin-left:110px;" onclick="openOverlay()">CO2 Sensor Calibration</button> 
+
+                </div> 
+               
+            </div>
+
+            
+        </div>
+    </div>
+        
+    </body>
+</html>
