@@ -27,16 +27,16 @@
 #include "esp_discovery.h"
 #include "wifi_app.h"
 
-#include "../../ld2410/include/ld2410.h"
-#include "../../pir-sensor/include/pir-sensor.h"
-#include "../../adafruit-161/include/adafruit-161.h"
-#include "../../direction-detection/include/direction-detection.h"
+#include "ld2410.h"
+#include "pir-sensor.h"
+#include "adafruit-161.h"
+#include "direction-detection.h"
 
-#include "/home/builder/esp/esp-idf/components/esp-tls/esp_tls.h"
-#include "/home/builder/esp/esp-idf/components/mqtt/esp-mqtt/include/mqtt_client.h"
+#include "esp_tls.h"
+#include "mqtt_client.h"
 
-#include "/home/builder/esp/esp-idf/components/hal/include/hal/ledc_types.h"
-#include "/home/builder/esp/esp-idf/components/hal/include/hal/gpio_types.h"
+#include "hal/ledc_types.h"
+#include "hal/gpio_types.h"
 
 #define PIR_QOS       2
 #define T_H_QOS       0

@@ -44,12 +44,12 @@
 #include <freertos/task.h>
 #include <esp_system.h>
 #include <esp_timer.h>
-#include <../../esp-idf-lib/components/esp_idf_lib_helpers/esp_idf_lib_helpers.h>
+#include "esp_idf_lib_helpers.h"
 #include <string.h>
 #include <esp_err.h>
 #include "sht30.h"
 #include "tasks_common.h"
-#include "../ha_mqtt/include/ha_mqtt.h"
+#include "ha_mqtt.h"
 #include "freertos/event_groups.h"
 
 

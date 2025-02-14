@@ -7,7 +7,7 @@
 #include <esp_log.h>
 #include "tasks_common.h"
 #include "direction-detection.h"
-#include "../../ld2410/include/ld2410.h"
+#include "ld2410.h"
 #include "freertos/event_groups.h"
 
 #define NOMOVEMENT 0

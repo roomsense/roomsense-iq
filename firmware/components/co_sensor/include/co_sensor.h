@@ -9,7 +9,7 @@
 #include <driver/uart.h>
 #include <driver/gpio.h>
 #include <esp_err.h>
-#include "../../sht30/include/sht30.h"
+#include "sht30.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -19,9 +19,8 @@
 #include <esp_log.h>
 #include "tasks_common.h"
 #include "esp_timer.h"
-#include "../ha_mqtt/include/ha_mqtt.h"
-
-#include "../direction-detection/include/direction-detection.h"
+#include "ha_mqtt.h"
+#include "direction-detection.h"
 
 static const char *TAG = "ld2410";
 

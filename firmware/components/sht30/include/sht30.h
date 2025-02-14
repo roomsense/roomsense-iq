@@ -44,8 +44,8 @@
 #define __SHT3X_H__
 
 #include <stdbool.h>
-#include <../../esp-idf-lib/components/i2cdev/i2cdev.h>
-#include <../../esp-idf-lib/components/esp_idf_lib_helpers/esp_idf_lib_helpers.h>
+#include "i2cdev.h"
+#include "esp_idf_lib_helpers.h"
 #include <esp_err.h>
 
 #ifdef __cplusplus

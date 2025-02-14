@@ -21,7 +21,7 @@
 #include <math.h>
 #include "tasks_common.h"
 #include "climatesense.h"
-#include "../components/co_sensor/include/co_sensor.h"
+#include "co_sensor.h"
 #include "esp_timer.h"
 #include "dashboard.h"
 /* float is used in printf(). you need non-default configuration in

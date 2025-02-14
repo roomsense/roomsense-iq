@@ -44,7 +44,7 @@
 #define __SCD4X_H__
 
 //#include <i2cdev.h>
-#include <../../esp-idf-lib/components/i2cdev/i2cdev.h>
+#include "i2cdev.h"
 #include <esp_err.h>
 #include <stdbool.h>
 
