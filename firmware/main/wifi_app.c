@@ -27,7 +27,7 @@ static const char TAG [] = "wifi_app";
 wifi_config_t *wifi_config = NULL;
 
 // Used to track the number for retries when a connection attempt fails
-static int g_retry_number;
+static int g_retry_number = 0;
 
 static bool g_clear_button = false;
 /**
@@ -131,16 +131,25 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 				ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); // Enable AP again when network disconnects
 				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
 				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t*)event_data);
-				printf("WIFI_EVENT_STA_DISCONNECTED, reason code %d\n", wifi_event_sta_disconnected->reason);
+				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
 
-				if (g_retry_number < MAX_CONNECTION_RETRIES)
-				{
-					esp_wifi_connect();
-					g_retry_number ++;
-				}
-				else
-				{
+				EventBits_t eventBits = xEventGroupGetBits(wifi_app_event_group);
+
+				// if user requested disconnect, don't retry
+				if (eventBits & WIFI_APP_USER_REQUESTED_STA_DISCONNECT_BIT) {
+					ESP_LOGI(TAG, "User requested disconnect, not retrying");
 					wifi_app_send_message(WIFI_APP_MSG_STA_DISCONNECTED);
+				} else {
+					g_retry_number++;
+
+					// if the user requested connect, try up to MAX_CONNECTION_RETRIES times
+					if ((eventBits & WIFI_APP_CONNECTING_FROM_HTTP_SERVER_BIT) && (g_retry_number >= MAX_CONNECTION_RETRIES)) {
+						ESP_LOGE(TAG, "Max retries reached, not retrying");
+						wifi_app_send_message(WIFI_APP_MSG_STA_DISCONNECTED);
+					// otherwise, keep trying forever
+					} else {
+						esp_wifi_connect();
+					}
 				}
 
 				break;
@@ -365,7 +374,7 @@ static void wifi_app_task(void *pvParameters)
 					{
 						xEventGroupSetBits(wifi_app_event_group, WIFI_APP_USER_REQUESTED_STA_DISCONNECT_BIT);
 
-						g_retry_number = MAX_CONNECTION_RETRIES;
+						g_retry_number = 0;
 						g_clear_button = true;
 						ESP_ERROR_CHECK(esp_wifi_disconnect());
 						app_nvs_clear_sta_creds();
