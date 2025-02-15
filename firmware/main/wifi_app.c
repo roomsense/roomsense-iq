@@ -129,8 +129,7 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 			case WIFI_EVENT_STA_DISCONNECTED: //station disconnect
 				ESP_LOGI(TAG, "WIFI_EVENT_STA_DISCONNECTED");
 				ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); // Enable AP again when network disconnects
-				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
-				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t*)event_data);
+				const wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (const wifi_event_sta_disconnected_t *)event_data;
 				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
 
 				EventBits_t eventBits = xEventGroupGetBits(wifi_app_event_group);
