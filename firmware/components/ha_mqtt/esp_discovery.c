@@ -74,8 +74,6 @@ char* esp_discovery_serialize_number(esp_discovery_number_t *discovery)
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
 
-	char *jsonString = cJSON_PrintUnformatted(root);
-
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
 	cJSON_AddStringToObject(root, "name", discovery->name);
@@ -144,7 +142,6 @@ char* esp_discovery_serialize_button(esp_discovery_button_t *discovery)
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -206,7 +203,6 @@ char* esp_discovery_serialize_switch(esp_discovery_switch_t *discovery)
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -234,7 +230,6 @@ char* esp_discovery_serialize_room_presence(esp_discovery_room_presence_t *disco
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -317,7 +312,6 @@ char* esp_discovery_serialize_pir_sensor(esp_discovery_pir_sensor_t *discovery)
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -390,7 +384,6 @@ char* esp_discovery_serialize_macro_move_sensor(esp_discovery_macro_move_sensor_
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -448,7 +441,6 @@ char* esp_discovery_serialize_micro_move_sensor(esp_discovery_micro_move_sensor_
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -506,7 +498,6 @@ char* esp_discovery_serialize_light_sensor(esp_discovery_light_sensor_t *discove
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
@@ -588,8 +579,6 @@ char* esp_discovery_serialize_sensor(esp_discovery_sensor_t *discovery)
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
 
-	char *jsonString = cJSON_PrintUnformatted(root);
-
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
 	cJSON_AddStringToObject(root, "name", discovery->name);
@@ -667,8 +656,6 @@ char* esp_discovery_serialize_text(esp_discovery_text_t *discovery)
 			{ "RoomSense" }, 1);
 	cJSON_AddItemToObject(device, "identifiers", identifiers);
 	cJSON_AddStringToObject(device, "name", "RoomSense IQ");
-
-	char *jsonString = cJSON_PrintUnformatted(root);
 
 	cJSON_AddStringToObject(root, "platform", discovery->platform);
 	cJSON_AddStringToObject(root, "schema", discovery->schema);
