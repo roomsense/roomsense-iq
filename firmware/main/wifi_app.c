@@ -128,9 +128,14 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 
 			case WIFI_EVENT_STA_DISCONNECTED: //station disconnect
 				ESP_LOGI(TAG, "WIFI_EVENT_STA_DISCONNECTED");
-				ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); // Enable AP again when network disconnects
 				const wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (const wifi_event_sta_disconnected_t *)event_data;
 				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
+
+				int retries = MAX_CONNECTION_RETRIES;
+				while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA)) != ESP_OK && --retries) // Enable AP again when network disconnects
+					ESP_LOGE(TAG, "Failed to set wifi mode"); // race can occur where esp_wifi_set_mode returns ESP_ERR_WIFI_STOP_STATE
+				if (!retries)
+					ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
 				EventBits_t eventBits = xEventGroupGetBits(wifi_app_event_group);
 
@@ -175,10 +180,8 @@ static void wifi_app_event_handler_init(void)
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	esp_netif_sta = esp_netif_create_default_wifi_sta();
 	// Event handler for the connection
-	esp_event_handler_instance_t instance_wifi_event;
-	esp_event_handler_instance_t instance_ip_event;
-	ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta, &instance_wifi_event));
-	ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta, &instance_ip_event));
+	ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta));
+	ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta));
 }
 
 
