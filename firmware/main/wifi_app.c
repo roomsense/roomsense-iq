@@ -132,8 +132,10 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
 
 				int retries = MAX_CONNECTION_RETRIES;
-				while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA)) != ESP_OK && --retries) // Enable AP again when network disconnects
+				while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA)) != ESP_OK && --retries) { // Enable AP again when network disconnects
 					ESP_LOGE(TAG, "Failed to set wifi mode"); // race can occur where esp_wifi_set_mode returns ESP_ERR_WIFI_STOP_STATE
+					taskYIELD();
+				}
 				if (!retries)
 					ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
@@ -206,12 +208,14 @@ static void wifi_app_default_wifi_init(void)
  */
 static void wifi_app_soft_ap_config(void)
 {
+	char ap_ssid[MAX_SSID_LENGTH + 1] = {0};
+
 	// SoftAP - WiFi access point configuration
 	wifi_config_t ap_config =
 	{
 		.ap = {
-				.ssid = "RoomSense-",
-				.ssid_len = strlen(WIFI_AP_SSID),
+				.ssid = {0},
+				.ssid_len = 0,
 				.password = WIFI_AP_PASSWORD,
 				.channel = WIFI_AP_CHANNEL,
 				.ssid_hidden = WIFI_AP_SSID_HIDDEN,
@@ -225,16 +229,20 @@ static void wifi_app_soft_ap_config(void)
 	esp_netif_ip_info_t ap_ip_info;
 	memset(&ap_ip_info, 0x00, sizeof(ap_ip_info));
 
+	strcpy((char *)&ap_ssid, WIFI_AP_SSID); // prefix
+
 	//Add the sensor's location to the SSID
-	if(roomsense_iq_shared.location[0] != '\0')
+	if (roomsense_iq_shared.location[0] != '\0')
 	{
-	   strcat((char *)ap_config.ap.ssid, roomsense_iq_shared.location);
-	   strcat((char *)ap_config.ap.ssid, "-");
+		// location will be truncated so that ap_ssid <= 32 chars
+		strncat((char *)&ap_ssid, roomsense_iq_shared.location, MAX_SSID_LENGTH - strlen(WIFI_AP_SSID) - 1 - 4);
+		strcat((char *)&ap_ssid, "-");
 	}
 
 	//Add the last 4 digit of mac address to the SSID
-	strcat((char *)ap_config.ap.ssid, roomsense_iq_shared.mac_address + strlen(roomsense_iq_shared.mac_address) - 4);
-
+	strcat((char *)&ap_ssid, roomsense_iq_shared.mac_address + strlen(roomsense_iq_shared.mac_address) - 4);
+	memcpy((char *)ap_config.ap.ssid, (char *)&ap_ssid, MAX_SSID_LENGTH);
+	ap_config.ap.ssid_len = strlen(ap_ssid);
 	//set access point password
 	memset(ap_config.ap.password, 0x00, sizeof(ap_config.ap.password));
 
