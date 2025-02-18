@@ -126,6 +126,7 @@
 #define MAX_MQTT_PUBLISH_LENGTH             20
 
 #define MAC_ADDRESS_LENGTH                  15
+#define LOCATION_SIZE                       32
 
 extern SemaphoreHandle_t baseline_semaphore;
 extern SemaphoreHandle_t blindspot_semaphore;
