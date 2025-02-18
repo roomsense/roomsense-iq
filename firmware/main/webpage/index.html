@@ -28,17 +28,39 @@
 					console.log(xhr.responseText);
 					let json = JSON.parse(xhr.responseText);
 					console.log(json);
-					if(json.device_location != null)document.getElementById('current_location').textContent = json.device_location;
-					else document.getElementById('current_location').textContent = "NotSet";
-					if(json.ipType != null){
-						if(json.ipType === 'static')document.getElementById('ipsetting_state').textContent = "Current Setting: "+ "Static IP Address";
-						else if(json.ipType === 'dynamic')document.getElementById('ipsetting_state').textContent = "Current Setting: "+ "Dynamic IP Address";
+
+					var current_location;
+					if (json.device_location != null && json.device_location.length) {
+						current_location = json.device_location;
 					}
-					
-					else document.getElementById('ipsetting_state').textContent = "(Default:Dynamic)";
-				} 
+					else {
+						current_location = 'Not Set';
+					}
+
+					document.getElementById('current_location').textContent = current_location;
+
+					var ipsetting;
+					if (json.ipType != null && json.ipType.length) {
+						if (json.ipType === 'static') {
+							ipsetting = 'Static IP Address';
+						}
+						else if (json.ipType === 'dynamic') {
+							ipsetting = 'Dynamic IP Address';
+						}
+						else {
+							ipsetting = 'Invalid';
+						}
+
+						ipsetting = `Current Setting: ${ipsetting}`;
+					}
+					else {
+						ipsetting = '(Default:Dynamic)';
+					}
+
+					document.getElementById('ipsetting_state').textContent = ipsetting;
+				}
 				else {
-				console.error('Request failed with status:', xhr.status);
+					console.error('Request failed with status:', xhr.status);
 				}
 			}
 			};
@@ -179,13 +201,36 @@
 			xhr.send(data);
 		}
 
-			//document.addEventListener('DOMContentLoaded', function() {
-			function update_device_location(){
-				document.getElementById('device_location_txt').style.display = "block";
-				document.getElementById('device_location_submit').value = "submit";
-				var device_location_content = document.getElementById('device_location_txt').value;
+			function show_location_input(location) {
+				document.getElementById('device_location_txt').value = location;
+				document.getElementById('device_location_txt').style.display = 'block';
+				document.getElementById('device_location_submit').value = 'Submit';
+				document.getElementById('device_location_submit').setAttribute('onclick', 'update_device_location(1)');
+			}
+
+			function hide_location_input() {
+				document.getElementById('device_location_txt').style.display = 'none';
+				document.getElementById('device_location_submit').value = 'Location Tag';
+				document.getElementById('device_location_submit').setAttribute('onclick', 'update_device_location()');
+			}
+
+			function update_device_location(submit) {
+				var current_location = document.getElementById('current_location').textContent == 'Not Set' ? '' : document.getElementById('current_location').textContent;
+
+				if (!submit) {
+					show_location_input(current_location);
+					return;
+				}
+
+				var new_location = document.getElementById('device_location_txt').value;
+
+				if (current_location == new_location) {
+					hide_location_input();
+					return;
+				}
+
 				var data = JSON.stringify({
-					device_location : device_location_content
+					device_location: new_location
 				});
 				console.log(data);
 				var xhr = new XMLHttpRequest();
@@ -193,16 +238,16 @@
 				xhr.setRequestHeader("Content-Type", "application/json");
 				xhr.onreadystatechange = function () {
 					if (xhr.readyState === 4 && xhr.status === 200) {
-						document.getElementById('current_location').textContent = device_location_content;
+						document.getElementById('current_location').textContent = new_location.length ? new_location : 'Not Set';
 						console.log('Success:', xhr.responseText);
-						// Handle success response from the server if needed
+						hide_location_input();
 					} else if (xhr.readyState === 4 && xhr.status !== 200) {
-						console.error('Error:', xhr.responseText);
-						// Handle error if the request fails
+						var error = `Error: ${xhr.responseText}`;
+						console.error(error);
+						alert(error);
 					}
 				};
 				xhr.send(data);
-				console.log("click");
 			};
 
 			// document.addEventListener('DOMContentLoaded', function() {
@@ -281,7 +326,7 @@
 	</header>
 	<div id = "location_tag" >
 		<label style="color: #4a89e0; font-weight:bolder; font-size: large;"> Location:  </label>
-		<label id = 'current_location' style="color: #79b1ff; font-weight:bolder; font-size: large;"> Not Set </label>
+		<label id = 'current_location' style="color: #79b1ff; font-weight:bolder; font-size: large;"></label>
 	</div>
 	<hr>
 	<div id="OTA">
@@ -425,8 +470,8 @@
 	</div>
 	
 	<div style="margin-left: 10px; margin-top: -8px;">
-		<input id = 'device_location_txt' type = "text" style="display: none;">	
-		<input id = "device_location_submit" type="button" value="Location Tag" onclick="update_device_location()">
+		<input id='device_location_txt' type="text" maxlength="32" style="display: none;">
+		<input id="device_location_submit" type="button" value="Location Tag" onclick="update_device_location()">
 	</div>
 	</div>
 	</body>
