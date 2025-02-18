@@ -776,20 +776,17 @@ esp_err_t http_server_settings_parameters_handler(httpd_req_t*req){
 	return ESP_OK;
 }
 
-esp_err_t http_server_set_device_location_handler(httpd_req_t*req){
-	ESP_LOGI(TAG,"Get device location tag");
-	char content[100];
-	memset(content, 0, sizeof(content));
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
+esp_err_t http_server_set_device_location_handler(httpd_req_t*req) {
+	ESP_LOGI(TAG, "Get device location tag");
+	char content[100] = {0};
+
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
+	}
+
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
     {
@@ -836,19 +833,15 @@ esp_err_t http_server_set_device_location_handler(httpd_req_t*req){
 
 esp_err_t http_server_network_config_handler(httpd_req_t *req)
 {
-    char content[100];
-	memset(content, 0, sizeof(content));
+    char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
+    int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+    if (read_len <= 0)
     {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+        return ESP_FAIL;
     }
+
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
     {
@@ -917,20 +910,16 @@ esp_err_t http_server_network_config_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t access_point_state_handler(httpd_req_t *req){
-	char content[100];
-	memset(content, 0, sizeof(content));
+esp_err_t access_point_state_handler(httpd_req_t *req) {
+	char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
+	}
+
 	printf("received %s\r\n",content);
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
@@ -994,20 +983,16 @@ esp_err_t access_point_state_handler(httpd_req_t *req){
 }
 
 
-esp_err_t led_state_handler(httpd_req_t *req){
-	char content[100];
-	memset(content, 0, sizeof(content));
+esp_err_t led_state_handler(httpd_req_t *req) {
+	char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
+	}
+
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
     {
