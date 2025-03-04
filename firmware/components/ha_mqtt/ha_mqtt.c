@@ -1630,6 +1630,7 @@ static void mqtt_app_task(void *pvParameters)
 				{
 					ESP_LOGI(TAG, "saved Credentials.");
 					app_nvs_save_mqtt_creds();
+					xEventGroupSetBits(mqtt_app_event_group, MQTT_APP_CONNECTING_USING_SAVED_CREDS_BIT);
 				}
 				if (eventBits & MQTT_APP_CONNECTING_FROM_HTTP_SERVER_BIT)
 				{
@@ -1641,7 +1642,6 @@ static void mqtt_app_task(void *pvParameters)
 			case MQTT_APP_MSG_DISCONNECTED:
 				ESP_LOGI(TAG, "MQTT_APP_MSG_DISCONNECTED");
 				g_mqtt_connection_status = false;
-				xEventGroupClearBits(mqtt_app_event_group, MQTT_APP_CONNECTING_USING_SAVED_CREDS_BIT);
 				xEventGroupClearBits(mqtt_app_event_group, MQTT_APP_CONNECTING_FROM_HTTP_SERVER_BIT);
 
 				if (roomsense_iq_shared.wifi_app_shared.g_wifi_connection_status == true)
@@ -1671,6 +1671,8 @@ static void mqtt_app_task(void *pvParameters)
 
 					mqtt_cfg.username = NULL;
 					mqtt_cfg.password = NULL;
+
+					xEventGroupClearBits(mqtt_app_event_group, MQTT_APP_CONNECTING_USING_SAVED_CREDS_BIT);
 
 					//mqtt_app_send_message(MQTT_APP_MSG_LOAD_SAVED_CREDENTIALS);
 
