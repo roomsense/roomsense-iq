@@ -11,7 +11,7 @@
 #include "esp_wifi.h"
 #include "sys/param.h"
 #include <esp_wifi.h>
-#include "/home/builder/esp/esp-idf/components/lwip/lwip/src/include/lwip/sockets.h"
+#include "lwip/sockets.h"
 #include "nvs.h"
 #include "http_server.h"
 #include "tasks_common.h"

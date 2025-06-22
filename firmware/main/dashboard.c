@@ -1,5 +1,5 @@
 #include "esp_wifi.h"
-#include "/home/builder/esp/esp-idf/components/lwip/lwip/src/include/lwip/sockets.h"
+#include "lwip/sockets.h"
 #include "dashboard.h"
 #include "tasks_common.h"
 

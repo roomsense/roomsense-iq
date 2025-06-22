@@ -42,9 +42,9 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 //#include <ets_sys.h>
-#include "/home/builder/esp/esp-idf/components/esp_rom/include/esp32s3/rom/ets_sys.h"
+#include "rom/ets_sys.h"
 
-#include <../../esp-idf-lib/components/esp_idf_lib_helpers/esp_idf_lib_helpers.h>
+#include "esp_idf_lib_helpers.h"
 #include "scd4x.h"
 #include <stdio.h>
 #include <esp_err.h>

@@ -14,7 +14,7 @@
 
 #include <stdbool.h>
 #include <time.h>
-#include <../../esp-idf-lib/components/i2cdev/i2cdev.h>
+#include "i2cdev.h"
 #include <esp_err.h>
 
 #ifdef __cplusplus

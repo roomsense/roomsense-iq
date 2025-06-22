@@ -8,13 +8,13 @@
  * BSD Licensed as described in the file LICENSE
  */
 #include <esp_err.h>
-#include <../../esp-idf-lib/components/esp_idf_lib_helpers/esp_idf_lib_helpers.h>
+#include "esp_idf_lib_helpers.h"
 #include <esp_log.h>
 #include <mpm10.h>
 #include <math.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <../../esp-idf-lib/components/esp_idf_lib_helpers/ets_sys.h>
+#include "ets_sys.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <esp_system.h>

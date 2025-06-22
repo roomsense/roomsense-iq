@@ -5,7 +5,7 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 #include "tasks_common.h"
-#include "/home/builder/esp/esp-idf/components/esp_adc_cal/include/esp_adc_cal.h"
+#include "esp_adc_cal.h"
 
 static const char *TAG = "ada161";
 
