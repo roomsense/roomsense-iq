@@ -12,7 +12,7 @@
 #include "freertos/event_groups.h"
 
 // WiFi application settings
-#define WIFI_AP_SSID				"RoomSense-ECDA3B9D6C14"		// AP name
+#define WIFI_AP_SSID				"RoomSense-"		// AP name prefix
 #define WIFI_AP_PASSWORD			"password"			// AP password
 #define WIFI_AP_CHANNEL				1					// AP channel
 #define WIFI_AP_SSID_HIDDEN			0					// AP visibility

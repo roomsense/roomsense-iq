@@ -31,7 +31,7 @@ static const char *TAG = "MAIN";
 roomsense_iq roomsense_iq_shared =
 {
 	 .ap_key                     = "password",  // Initialize with "password"
-	 .location                   = { },
+	 .location                   = {0},
 	 .led_enable                 = true,
 	 .ap_enable                  = true,
 	 .alert_flag                 = false,
@@ -41,8 +41,8 @@ roomsense_iq roomsense_iq_shared =
 	 .t_h_co2_connection         = false,
 	 .voc_connection             = false,
 	 .pm_connection              = false,
-	 .ld2410_config_shared       = { },
-	 .ld2410_data_shared         = { },
+	 .ld2410_config_shared       = {0},
+	 .ld2410_data_shared         = {0},
 	 .buttons_shared             = { .g_button_get_config = false, .g_button_set_config = false, .g_button_factory_reset = false, .g_button_config_to_pir = false },
 	 .adafruit_161_shared        = { .light_density_raw = 0 },
 	 .direction_detection_shared = { .macro_movement = 0, .g_movement_direction = 0 },
@@ -158,8 +158,8 @@ esp_err_t load_location()
 {
 	esp_err_t err;
 	nvs_handle handle;
-	static char loc[16] = {0};
-	static size_t loc_sz = 16;
+	char loc[LOCATION_SIZE + 1] = {0};
+	size_t loc_sz = LOCATION_SIZE;
 
 	err = nvs_open("net_config", NVS_READWRITE, &handle);
 	if (err != ESP_OK)

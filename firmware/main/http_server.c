@@ -25,8 +25,7 @@
 #include "dashboard.h"
 
 bool g_ws_pause = false;
-static char loc[16] = {0};
-static size_t loc_sz = 16;
+
 // Tag used for ESP serial console messages
 static const char TAG[] = "http_server";
 
@@ -734,6 +733,9 @@ esp_err_t http_server_device_location_handler(httpd_req_t*req){
 
 	char dbuf[128]={0};
 	char ipType[32]={0};
+	char loc[LOCATION_SIZE + 1] = {0};
+	size_t loc_sz = LOCATION_SIZE;
+
 	nvs_handle handle;
 	esp_err_t esp_err;
 	esp_err = nvs_open("net_config", NVS_READWRITE, &handle);
@@ -776,79 +778,84 @@ esp_err_t http_server_settings_parameters_handler(httpd_req_t*req){
 	return ESP_OK;
 }
 
-esp_err_t http_server_set_device_location_handler(httpd_req_t*req){
-	ESP_LOGI(TAG,"Get device location tag");
-	char content[100];
-	memset(content, 0, sizeof(content));
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
-    cJSON *json = cJSON_Parse(content);
-    if (json == NULL)
-    {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to parse JSON payload");
-        return ESP_FAIL;
-    }
-    cJSON *dev_location_Value_json = cJSON_GetObjectItem(json, "device_location");
-    if (dev_location_Value_json == NULL )
-    {
-        cJSON_Delete(json);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing network or password field");
-        printf("error parsing json\r\n");
-        return ESP_FAIL;
-    }
-    const char *dev_location_IpValue = dev_location_Value_json->valuestring;
-	if((strlen(dev_location_Value_json->valuestring) > 1)){
-		printf("RECEIVED : %s\n",dev_location_Value_json->valuestring);
-		strcpy(roomsense_iq_shared.location, dev_location_Value_json->valuestring);
+esp_err_t http_server_set_device_location_handler(httpd_req_t *req) {
+	ESP_LOGI(TAG, "Get device location tag");
+	char content[100] = {0};
+	size_t loc_sz = LOCATION_SIZE;
 
-		nvs_handle handle;
-		esp_err_t esp_err;
-		esp_err = nvs_open("net_config", NVS_READWRITE, &handle);
-		esp_err = nvs_set_blob(handle, "dev_loc_tag", dev_location_Value_json->valuestring, 16);
-		if (esp_err != ESP_OK)
-		{
-			nvs_close(handle);
-			const char *response = "failed to update device location tag";
-			httpd_resp_send(req, response, strlen(response));
-			return esp_err;
-		}
-		esp_err = nvs_commit(handle);
-		nvs_close(handle);
-		printf("app_nvs_save_netconfig_settings: returned ESP_OK\n");
-		const char *response = "device location tag updated";
-		httpd_resp_send(req, response, strlen(response));
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
 	}
-	else {
+
+	cJSON *json = cJSON_Parse(content);
+	if (json == NULL)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to parse JSON payload");
+		return ESP_FAIL;
+	}
+
+	cJSON *device_location_json = cJSON_GetObjectItem(json, "device_location");
+	if (device_location_json == NULL || !cJSON_IsString(device_location_json) || device_location_json->valuestring == NULL) // allow empty
+	{
+		cJSON_Delete(json);
+		const char *response = "device_location is missing";
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, response);
+		printf("%s\n", response);
+		return ESP_FAIL;
+	}
+
+	printf("RECEIVED : %s\n", device_location_json->valuestring);
+
+	if (strlen(device_location_json->valuestring) > loc_sz)
+	{
+		cJSON_Delete(json);
+		const char *response = "device location tag exceeds max length";
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, response);
+		printf("%s\n", response);
+		return ESP_FAIL;
+	}
+
+	memset(&roomsense_iq_shared.location, 0x00, loc_sz + 1);
+	strcpy(roomsense_iq_shared.location, device_location_json->valuestring);
+
+	cJSON_Delete(json);
+
+	nvs_handle handle;
+	esp_err_t esp_err;
+	esp_err = nvs_open("net_config", NVS_READWRITE, &handle);
+	esp_err = nvs_set_blob(handle, "dev_loc_tag", roomsense_iq_shared.location, loc_sz);
+	if (esp_err != ESP_OK)
+	{
+		nvs_close(handle);
 		const char *response = "failed to update device location tag";
 		httpd_resp_send(req, response, strlen(response));
+		return esp_err;
 	}
-    cJSON_Delete(json);
+
+	esp_err = nvs_commit(handle);
+	nvs_close(handle);
+
+	const char *response = "device location tag updated";
+	httpd_resp_send(req, response, HTTPD_RESP_USE_STRLEN);
+	printf("%s\n", response);
+
 	return ESP_OK;
 }
 
 esp_err_t http_server_network_config_handler(httpd_req_t *req)
 {
-    char content[100];
-	memset(content, 0, sizeof(content));
+    char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
+    int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+    if (read_len <= 0)
     {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+        return ESP_FAIL;
     }
+
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
     {
@@ -917,20 +924,16 @@ esp_err_t http_server_network_config_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t access_point_state_handler(httpd_req_t *req){
-	char content[100];
-	memset(content, 0, sizeof(content));
+esp_err_t access_point_state_handler(httpd_req_t *req) {
+	char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
+	}
+
 	printf("received %s\r\n",content);
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
@@ -994,20 +997,16 @@ esp_err_t access_point_state_handler(httpd_req_t *req){
 }
 
 
-esp_err_t led_state_handler(httpd_req_t *req){
-	char content[100];
-	memset(content, 0, sizeof(content));
+esp_err_t led_state_handler(httpd_req_t *req) {
+	char content[100] = {0};
 
-    int content_length = req->content_len;
-    if (content_length > 0)
-    {
-        int read_len = httpd_req_recv(req, content, content_length);
-        if (read_len <= 0)
-        {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
-            return ESP_FAIL;
-        }
-    }
+	int read_len = httpd_req_recv(req, content, MIN(req->content_len, sizeof(content) - 1));
+	if (read_len <= 0)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Failed to read request payload");
+		return ESP_FAIL;
+	}
+
     cJSON *json = cJSON_Parse(content);
     if (json == NULL)
     {

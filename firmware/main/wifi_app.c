@@ -27,7 +27,7 @@ static const char TAG [] = "wifi_app";
 wifi_config_t *wifi_config = NULL;
 
 // Used to track the number for retries when a connection attempt fails
-static int g_retry_number;
+static int g_retry_number = 0;
 
 static bool g_clear_button = false;
 /**
@@ -128,19 +128,34 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 
 			case WIFI_EVENT_STA_DISCONNECTED: //station disconnect
 				ESP_LOGI(TAG, "WIFI_EVENT_STA_DISCONNECTED");
-				ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA)); // Enable AP again when network disconnects
-				wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
-				*wifi_event_sta_disconnected = *((wifi_event_sta_disconnected_t*)event_data);
-				printf("WIFI_EVENT_STA_DISCONNECTED, reason code %d\n", wifi_event_sta_disconnected->reason);
+				const wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (const wifi_event_sta_disconnected_t *)event_data;
+				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
 
-				if (g_retry_number < MAX_CONNECTION_RETRIES)
-				{
-					esp_wifi_connect();
-					g_retry_number ++;
+				int retries = MAX_CONNECTION_RETRIES;
+				while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA)) != ESP_OK && --retries) { // Enable AP again when network disconnects
+					ESP_LOGE(TAG, "Failed to set wifi mode"); // race can occur where esp_wifi_set_mode returns ESP_ERR_WIFI_STOP_STATE
+					taskYIELD();
 				}
-				else
-				{
+				if (!retries)
+					ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+
+				EventBits_t eventBits = xEventGroupGetBits(wifi_app_event_group);
+
+				// if user requested disconnect, don't retry
+				if (eventBits & WIFI_APP_USER_REQUESTED_STA_DISCONNECT_BIT) {
+					ESP_LOGI(TAG, "User requested disconnect, not retrying");
 					wifi_app_send_message(WIFI_APP_MSG_STA_DISCONNECTED);
+				} else {
+					g_retry_number++;
+
+					// if the user requested connect, try up to MAX_CONNECTION_RETRIES times
+					if ((eventBits & WIFI_APP_CONNECTING_FROM_HTTP_SERVER_BIT) && (g_retry_number >= MAX_CONNECTION_RETRIES)) {
+						ESP_LOGE(TAG, "Max retries reached, not retrying");
+						wifi_app_send_message(WIFI_APP_MSG_STA_DISCONNECTED);
+					// otherwise, keep trying forever
+					} else {
+						esp_wifi_connect();
+					}
 				}
 
 				break;
@@ -167,10 +182,8 @@ static void wifi_app_event_handler_init(void)
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	esp_netif_sta = esp_netif_create_default_wifi_sta();
 	// Event handler for the connection
-	esp_event_handler_instance_t instance_wifi_event;
-	esp_event_handler_instance_t instance_ip_event;
-	ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta, &instance_wifi_event));
-	ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta, &instance_ip_event));
+	ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta));
+	ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, &wifi_app_event_handler, esp_netif_sta));
 }
 
 
@@ -195,12 +208,14 @@ static void wifi_app_default_wifi_init(void)
  */
 static void wifi_app_soft_ap_config(void)
 {
+	char ap_ssid[MAX_SSID_LENGTH + 1] = {0};
+
 	// SoftAP - WiFi access point configuration
 	wifi_config_t ap_config =
 	{
 		.ap = {
-				.ssid = "RoomSense-",
-				.ssid_len = strlen(WIFI_AP_SSID),
+				.ssid = {0},
+				.ssid_len = 0,
 				.password = WIFI_AP_PASSWORD,
 				.channel = WIFI_AP_CHANNEL,
 				.ssid_hidden = WIFI_AP_SSID_HIDDEN,
@@ -214,16 +229,20 @@ static void wifi_app_soft_ap_config(void)
 	esp_netif_ip_info_t ap_ip_info;
 	memset(&ap_ip_info, 0x00, sizeof(ap_ip_info));
 
+	strcpy((char *)&ap_ssid, WIFI_AP_SSID); // prefix
+
 	//Add the sensor's location to the SSID
-	if(roomsense_iq_shared.location[0] != '\0')
+	if (roomsense_iq_shared.location[0] != '\0')
 	{
-	   strcat((char *)ap_config.ap.ssid, roomsense_iq_shared.location);
-	   strcat((char *)ap_config.ap.ssid, "-");
+		// location will be truncated so that ap_ssid <= 32 chars
+		strncat((char *)&ap_ssid, roomsense_iq_shared.location, MAX_SSID_LENGTH - strlen(WIFI_AP_SSID) - 1 - 4);
+		strcat((char *)&ap_ssid, "-");
 	}
 
 	//Add the last 4 digit of mac address to the SSID
-	strcat((char *)ap_config.ap.ssid, roomsense_iq_shared.mac_address + strlen(roomsense_iq_shared.mac_address) - 4);
-
+	strcat((char *)&ap_ssid, roomsense_iq_shared.mac_address + strlen(roomsense_iq_shared.mac_address) - 4);
+	memcpy((char *)ap_config.ap.ssid, (char *)&ap_ssid, MAX_SSID_LENGTH);
+	ap_config.ap.ssid_len = strlen(ap_ssid);
 	//set access point password
 	memset(ap_config.ap.password, 0x00, sizeof(ap_config.ap.password));
 
@@ -365,7 +384,7 @@ static void wifi_app_task(void *pvParameters)
 					{
 						xEventGroupSetBits(wifi_app_event_group, WIFI_APP_USER_REQUESTED_STA_DISCONNECT_BIT);
 
-						g_retry_number = MAX_CONNECTION_RETRIES;
+						g_retry_number = 0;
 						g_clear_button = true;
 						ESP_ERROR_CHECK(esp_wifi_disconnect());
 						app_nvs_clear_sta_creds();
