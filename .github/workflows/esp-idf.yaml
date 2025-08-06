@@ -3,6 +3,7 @@ name: esp-idf ci
 
 on:
   push:
+  pull_request:
 
 jobs:
   build:
