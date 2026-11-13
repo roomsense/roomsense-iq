@@ -107,9 +107,7 @@ void app_main(void)
 
 	//printf("ESP-IDF Version %s", esp_get_idf_version());
 
-#ifdef ENABLE_ACCESS_POINT_SWITCH
-	app_nvs_load_ap_enable();
-#endif
+	app_nvs_load_ap_enable(); ///> the web UI "AP State" switch is always honoured
 
 	app_nvs_load_led_enable();
 	app_nvs_load_ap_key();
