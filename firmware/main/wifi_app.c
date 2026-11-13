@@ -11,6 +11,7 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_wifi.h"
 #include "lwip/netdb.h"
 #include "nvs.h"
@@ -30,6 +31,20 @@ wifi_config_t *wifi_config = NULL;
 static int g_retry_number = 0;
 
 static bool g_clear_button = false;
+
+// Set when the SoftAP is brought back up as a rescue after a long disconnect while the
+// user has the AP switched off; cleared as soon as the station is connected again.
+static bool g_ap_rescue_active = false;
+
+// Timestamp of the last successful connection (or of boot), used to decide when the
+// rescue SoftAP should come back up.
+static int64_t g_last_connected_us = 0;
+
+// Defined further down, next to the SoftAP configuration; the WiFi event handler above
+// needs them to put the AP up and down.
+static void wifi_app_ap_set_enabled(bool enable);
+static bool wifi_app_ap_should_be_up(void);
+static void wifi_app_soft_ap_config(void);
 /**
  * Wifi application event group handle and status bits
  */
@@ -131,13 +146,20 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 				const wifi_event_sta_disconnected_t *wifi_event_sta_disconnected = (const wifi_event_sta_disconnected_t *)event_data;
 				ESP_LOGE(TAG, "WIFI_EVENT_STA_DISCONNECTED, reason code %d, retries %d", wifi_event_sta_disconnected->reason, g_retry_number);
 
-				int retries = MAX_CONNECTION_RETRIES;
-				while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA)) != ESP_OK && --retries) { // Enable AP again when network disconnects
-					ESP_LOGE(TAG, "Failed to set wifi mode"); // race can occur where esp_wifi_set_mode returns ESP_ERR_WIFI_STOP_STATE
-					taskYIELD();
+				// Bring the AP back up when it is enabled. When the user has switched it off, only
+				// do so as a rescue after the station has been down for a while - a wrong password
+				// or a network that moved would otherwise leave the sensor unreachable.
+				if (!wifi_app_ap_should_be_up() &&
+						(esp_timer_get_time() - g_last_connected_us) > (AP_RESCUE_TIMEOUT_S * 1000000LL))
+				{
+					ESP_LOGW(TAG, "No connection for over %d s, enabling the SoftAP as a rescue", AP_RESCUE_TIMEOUT_S);
+					g_ap_rescue_active = true;
+					wifi_app_soft_ap_config();
 				}
-				if (!retries)
-					ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+				else if (wifi_app_ap_should_be_up())
+				{
+					wifi_app_ap_set_enabled(true); // Enable AP again when network disconnects
+				}
 
 				EventBits_t eventBits = xEventGroupGetBits(wifi_app_event_group);
 
@@ -167,6 +189,13 @@ static void wifi_app_event_handler(void *arg, esp_event_base_t event_base, int32
 		{
 			case IP_EVENT_STA_GOT_IP: // Station connected and got IP
 				ESP_LOGI(TAG, "IP_EVENT_STA_GOT_IP");
+				g_last_connected_us = esp_timer_get_time();
+				if (g_ap_rescue_active)
+				{
+					ESP_LOGI(TAG, "Station is back, turning the rescue SoftAP off");
+					g_ap_rescue_active = false;
+					wifi_app_ap_set_enabled(false);
+				}
 				wifi_app_send_message(WIFI_APP_MSG_STA_CONNECTED_GOT_IP);
 				break;
 		}
@@ -201,6 +230,47 @@ static void wifi_app_default_wifi_init(void)
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 //	esp_netif_sta = esp_netif_create_default_wifi_sta();
 	esp_netif_ap = esp_netif_create_default_wifi_ap();
+}
+
+/**
+ * Applies the requested SoftAP state to the WiFi driver.
+ *
+ * Keeping the AP up next to the station puts an extra access point per sensor on the air
+ * at all times, which is needless 2.4 GHz interference once the sensor is provisioned.
+ * An ESP32 can only be in station mode or AP+station mode, so the AP is dropped by
+ * switching the mode to station only and bringing the AP's DHCP server down with it.
+ * @param enable true for AP + station mode, false for station only
+ */
+static void wifi_app_ap_set_enabled(bool enable)
+{
+	wifi_mode_t mode = enable ? WIFI_MODE_APSTA : WIFI_MODE_STA;
+	int retries = MAX_CONNECTION_RETRIES;
+
+	ESP_LOGI(TAG, "SoftAP %s", enable ? "enable" : "disable");
+
+	if (!enable)
+	{
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcps_stop(esp_netif_ap));
+	}
+
+	while (ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(mode)) != ESP_OK && --retries)
+	{
+		ESP_LOGE(TAG, "Failed to set wifi mode"); // race can occur where esp_wifi_set_mode returns ESP_ERR_WIFI_STOP_STATE
+		taskYIELD();
+	}
+	if (!retries)
+	{
+		ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
+	}
+}
+
+/**
+ * True when the SoftAP should be running: the user has it enabled in the web UI, or the
+ * station has been unable to connect and the AP is up as a rescue.
+ */
+static bool wifi_app_ap_should_be_up(void)
+{
+	return roomsense_iq_shared.ap_enable || g_ap_rescue_active;
 }
 
 /**
@@ -249,17 +319,23 @@ static void wifi_app_soft_ap_config(void)
 
 	strcpy((char *)ap_config.ap.password, (char *)roomsense_iq_shared.ap_key);
 
-	esp_netif_dhcps_stop(esp_netif_ap);					///> must call this first
-	inet_pton(AF_INET, WIFI_AP_IP, &ap_ip_info.ip);		///> Assign access point's static IP, GW, and netmask
-	inet_pton(AF_INET, WIFI_AP_GATEWAY, &ap_ip_info.gw);
-	inet_pton(AF_INET, WIFI_AP_NETMASK, &ap_ip_info.netmask);
-	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_set_ip_info(esp_netif_ap, &ap_ip_info));			///> Statically configure the network interface
-	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcps_start(esp_netif_ap));						///> Start the AP DHCP server (for connecting stations e.g. your mobile device)
+	if (wifi_app_ap_should_be_up())
+	{
+		esp_netif_dhcps_stop(esp_netif_ap);					///> must call this first
+		inet_pton(AF_INET, WIFI_AP_IP, &ap_ip_info.ip);		///> Assign access point's static IP, GW, and netmask
+		inet_pton(AF_INET, WIFI_AP_GATEWAY, &ap_ip_info.gw);
+		inet_pton(AF_INET, WIFI_AP_NETMASK, &ap_ip_info.netmask);
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_set_ip_info(esp_netif_ap, &ap_ip_info));		///> Statically configure the network interface
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_netif_dhcps_start(esp_netif_ap));						///> Start the AP DHCP server (for connecting stations e.g. your mobile device)
 
-	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA));						///> Setting the mode as Access Point / Station Mode
-	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));			///> Set our configuration
-	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_AP_BANDWIDTH));		///> Our default bandwidth 20 MHz
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_mode(WIFI_MODE_APSTA));						///> The driver only takes the AP config while the AP is enabled
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));			///> Set our configuration
+		ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_AP_BANDWIDTH));	///> Our default bandwidth 20 MHz
+	}
+
 	ESP_ERROR_CHECK_WITHOUT_ABORT(esp_wifi_set_ps(WIFI_STA_POWER_SAVE));						///> Power save set to "NONE"
+
+	wifi_app_ap_set_enabled(wifi_app_ap_should_be_up());										///> Drop the AP when the user has switched it off
 
 }
 
@@ -280,6 +356,9 @@ static void wifi_app_task(void *pvParameters)
 {
 	wifi_app_queue_message_t msg;
 	EventBits_t eventBits;
+
+	// Nothing is connected yet, so the rescue timer starts counting from boot
+	g_last_connected_us = esp_timer_get_time();
 
 	// Initialize the event handler
 	wifi_app_event_handler_init();
@@ -448,7 +527,8 @@ static void wifi_app_task(void *pvParameters)
 					break;
 
 				case WIFI_APP_MSG_UPDATE_AP_ENABLE:
-					    ESP_LOGI(TAG, "AP Enable");
+				    ESP_LOGI(TAG, "AP Enable");
+				    g_ap_rescue_active = false; ///> the user's choice wins over a pending rescue
 					    wifi_app_soft_ap_config();
 					break;
 
