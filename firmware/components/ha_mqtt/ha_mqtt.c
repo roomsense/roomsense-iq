@@ -621,12 +621,12 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 			break;
 		}
 
-		if ((topic = (char *)calloc(event->topic_len + 1, 1)) == NULL) {
+		if ((topic = (char *)calloc(1, event->topic_len + 1)) == NULL) {
 			ESP_LOGE(TAG, "calloc of %i bytes for MQTT topic failed", event->topic_len + 1);
 			break;
 		}
 
-		if ((data = (char *)calloc(event->data_len + 1, 1)) == NULL) {
+		if ((data = (char *)calloc(1, event->data_len + 1)) == NULL) {
 			free(topic);
 			ESP_LOGE(TAG, "calloc of %i bytes for MQTT data failed", event->data_len + 1);
 			break;
