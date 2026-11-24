@@ -26,6 +26,7 @@
 #define MAX_SSID_LENGTH				32					// IEEE standard maximum
 #define MAX_PASSWORD_LENGTH			64					// IEEE standard maximum
 #define MAX_CONNECTION_RETRIES		5					// Retry number on disconnect
+#define AP_RESCUE_TIMEOUT_S			300					// Seconds without a connection before the switched-off SoftAP comes back as a rescue
 
 
 // netif object for the Station and Access Point
